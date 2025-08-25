@@ -2,8 +2,8 @@
 
 This step subsets to a  box containing the contiguous United States by calling `subset.R` for each of the 12 runs.
 
-Input: 12 `autoregressive_predictions.nc` files produced by the emulator (670 GB each)
-Output: `preds_{1..12}.Rda` (15 GB each)
+- Input: 12 `autoregressive_predictions.nc` files produced by the emulator (670 GB each)
+- Output: `preds_{1..12}.Rda` (15 GB each)
 
 ```bash
 ./subset.sh
@@ -13,8 +13,8 @@ Output: `preds_{1..12}.Rda` (15 GB each)
 
 This step produces daily (total precipitation and maximum temperature) from 6-hourly data, and also combines across the 12 runs. This requires a machine with at least 80 GB memory.
 
-Input: `preds_{1..12}.Rda` (15 GB each)
-Output: `{prec,temp}.Rda` (30 GB and 28 GB respectively)
+- Input: `preds_{1..12}.Rda` (15 GB each)
+- Output: `{prec,temp}.Rda` (30 GB and 28 GB respectively)
 
 
 ```bash
@@ -30,7 +30,7 @@ Some of the analysis involves comparison with ERA5.
 
 The data (i.e., the training data for ACE2-ERA5) are available at `https://console.cloud.google.com/storage/browser/ai2cm-public-requester-pays/2024-11-13-ai2-climate-emulator-v2-amip/data/era5-1deg-1940-2022.zarr`.
 
-Download only the 2m air temperature and precipitation data (plus metadata), using a Google Cloud Platform account.
+Download only the 2m air temperature and precipitation data (plus metadata), using a Google Cloud Platform account. The downloaded data is 57 GB.
 
 ```bash
 acct=<some_account>
@@ -51,6 +51,9 @@ gsutil -u ${acct} -m cp -r   "gs://ai2cm-public-requester-pays/2024-11-13-ai2-cl
 ```
 
 Subset to the contiguous US and produce daily (total precipitation and maximum temperature) from 6-hourly data.
+
+- Input: `era5-1deg-1940-2022.zarr` (57 GB)
+- Output: `era5.Rda` (470 MB)
 
 ```bash
 Rscript subset_era5.R
