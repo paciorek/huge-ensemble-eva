@@ -236,6 +236,54 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias.png")), plot = full_
 
 ## Shape parameter and AEP depth stability
 
+# Prepare data for ggplot
+data_histograms <- data.frame()
+for(i in c(1,3,5,7,9)) {
+    values <- as.vector(restrict(shapes[,,i]))
+    values <- values[!is.na(values)]
+    pct_negative <- 100 * round(mean(values < 0, na.rm = TRUE), 2)
+    
+    temp_data <- data.frame(
+        values = values,
+        label = paste(n_labs[i], ", ", pct_negative, "% < 0"),
+        index = i
+    )
+    data_histograms <- rbind(data_histograms, temp_data)
+}
+
+# Convert label to factor with levels in the order they appear
+data_histograms$label <- factor(data_histograms$label, levels = unique(data_histograms$label))
+
+# Create the histogram plots
+lim <- c(-.55, .55)
+
+plot_histograms <- ggplot(data_histograms, aes(x = values)) +
+    geom_histogram(bins = 30, fill = "grey", color = "black", alpha = 0.7) +
+    facet_wrap(~ label, ncol = 5, scales = "free_y") +
+    xlim(lim) + 
+    labs(x = "shape parameter estimate",
+         y = "frequency") +
+    theme_minimal() +
+    theme(
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.minor = element_line(color = "gray95"),
+        plot.title = element_text(size = 16, hjust = 0.5),
+        strip.text = element_text(size = 10),
+        axis.text = element_text(size = 9),
+        axis.title = element_text(size = 12)
+    )
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-shape-hists.pdf")), 
+       plot = plot_histograms, height = 3, width = 10)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-shape-hists.png")), 
+       plot = plot_histograms, height = 900, width = 3000, units = "px")
+
+
+
+
 if(var == "prec") {
     ylim <- c(-.5, .45)
 } else {
@@ -307,6 +355,87 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-stability.pdf")), plot = ful
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-stability.png")), plot = full_plot, 
     height = 1800, width = 3000, units = "px")
+
+# Alternative version that plots difference from n=499 case.
+
+
+# Prepare data for ggplot
+data_stability_shapes_alt <- data.frame(
+    shapes_5 = as.vector(restrict(shapes[,,5])),
+    shapes_1_diff = as.vector(restrict(shapes[,,1]) - restrict(shapes[,,5])),
+    shapes_3_diff = as.vector(restrict(shapes[,,3]) - restrict(shapes[,,5])),
+    shapes_6_diff = as.vector(restrict(shapes[,,6]) - restrict(shapes[,,5])),
+    shapes_8_diff = as.vector(restrict(shapes[,,8]) - restrict(shapes[,,5])),
+    shapes_9_diff = as.vector(restrict(shapes[,,9]) - restrict(shapes[,,5]))
+)
+
+data_stability_rvs_alt <- data.frame(
+    rvs_5 = as.vector(restrict(rvs[,,3,5])),
+    rvs_1_diff = as.vector(restrict(rvs[,,3,1]) - restrict(rvs[,,3,5])),
+    rvs_3_diff = as.vector(restrict(rvs[,,3,3]) - restrict(rvs[,,3,5])),
+    rvs_6_diff = as.vector(restrict(rvs[,,3,6]) - restrict(rvs[,,3,5])),
+    rvs_8_diff = as.vector(restrict(rvs[,,3,8]) - restrict(rvs[,,3,5])),
+    rvs_9_diff = as.vector(restrict(rvs[,,3,9]) - restrict(rvs[,,3,5]))
+)
+
+# Create individual plots for shape parameter stability
+if(var == "prec") {
+    ylim <- c(-.5, .5)
+} else {
+    ylim <- c(-.5, .5)  # Modify for temperature.
+}
+
+plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
+    ggplot(data_stability_shapes_alt, aes(x = shapes_5, y = .data[[paste0("shapes_", i, "_diff")]])) +
+        geom_point(size = 0.5) +
+        labs(
+            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[5]), ""),
+            y = paste0("difference for ", n_labs[i])
+        ) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+# Create individual plots for AEP depth stability
+if(var == "prec") {
+    ylim <- c(-20, 20)
+} else {
+    ylim <- c(-.5, .5)  # Modify for temperature.
+}
+
+plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
+    ggplot(data_stability_rvs_alt, aes(x = rvs_5, y = .data[[paste0("rvs_", i, "_diff")]])) +
+        geom_point(size = 0.5) +
+        labs(
+             x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[5]), ""),
+            y = paste0("difference for ", n_labs[i])
+        ) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+row1_title <- textGrob("Shape parameter estimates", gp = gpar(fontsize = 14, fontface = "bold"))
+row2_title <- textGrob("1-in-100000 year AEP depth estimates (cm)", gp = gpar(fontsize = 14, fontface = "bold"))
+
+# Arrange all plots with titles above each row.
+full_plot <- grid.arrange(
+    row1_title, plot_shapes[[1]], plot_shapes[[2]], plot_shapes[[3]], plot_shapes[[4]], plot_shapes[[5]],
+    row2_title, plot_rvs[[1]], plot_rvs[[2]], plot_rvs[[3]], plot_rvs[[4]], plot_rvs[[5]],
+    ncol = 5,
+    layout_matrix = rbind(
+        c(1, 1, 1, 1, 1),
+        c(2, 3, 4, 5, 6),
+        c(7, 7, 7, 7, 7),
+        c(8, 9, 10, 11, 12)
+    ),
+    heights = c(0.5, 4, 0.5, 4) # Adjust the relative heights of rows
+)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-stability-alt.pdf")), plot = full_plot, height = 6, width = 10)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-stability-alt.png")), plot = full_plot, 
+    height = 1800, width = 3000, units = "px")
+
 
 ## Seasonality
 
@@ -451,8 +580,8 @@ if(var == "prec") {
 }
 
 load(paste0(var, "_fits.Rda"))
-load(paste0(var, "_maxes.Rda"))  ## Eventually this will be in the _fits.Rda file.
 
+load('era5.Rda')
 
 if(var == "prec") {
     era5_max <- apply(prec_era5, c(1,2), max)
@@ -576,14 +705,13 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.png")),
 
 if(var == "prec") ylim <- c(0,60) else ylim <- c(25,60)
 
-load('temp_fits_fixed.Rda')
 
 # Prepare data for ggplot
 data_combined <- data.frame(
     emp_quants_1 = as.vector(restrict(emp_quants[,,1])),
     emp_quants_2 = as.vector(restrict(emp_quants[,,2])),
-    rvs_gev_1 = as.vector(restrict(rvs_gev_fix[,,1])),
-    rvs_gev_2 = as.vector(restrict(rvs_gev_fix[,,2]))
+    rvs_gev_1 = as.vector(restrict(rvs_gev[,,1])),
+    rvs_gev_2 = as.vector(restrict(rvs_gev[,,2]))
 )
 
 for(i in c(1,3,5,7)) {
@@ -648,6 +776,209 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias.pdf")), plot = full_
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias.png")), plot = full_plot, 
     height = 1600, width = 2400, units = "px")
 
+## Shape parameter and AEP depth stability
+
+# Prepare data for ggplot
+data_histograms <- data.frame()
+for(i in c(1,3,5,7,9)) {
+    values <- as.vector(restrict(shapes[,,i]))
+    values <- values[!is.na(values)]
+    pct_negative <- 100 * round(mean(values < 0, na.rm = TRUE), 2)
+    
+    temp_data <- data.frame(
+        values = values,
+        label = paste(n_labs[i], ", ", pct_negative, "% < 0"),
+        index = i
+    )
+    data_histograms <- rbind(data_histograms, temp_data)
+}
+
+# Convert label to factor with levels in the order they appear
+data_histograms$label <- factor(data_histograms$label, levels = unique(data_histograms$label))
+
+# Create the histogram plots
+lim <- c(-.55, .55)
+
+plot_histograms <- ggplot(data_histograms, aes(x = values)) +
+    geom_histogram(bins = 30, fill = "grey", color = "black", alpha = 0.7) +
+    facet_wrap(~ label, ncol = 5, scales = "free_y") +
+    xlim(lim) + 
+    labs(x = "shape parameter estimate",
+         y = "frequency") +
+    theme_minimal() +
+    theme(
+        panel.background = element_rect(fill = "white", color = NA),
+        plot.background = element_rect(fill = "white", color = NA),
+        panel.grid.major = element_line(color = "gray90"),
+        panel.grid.minor = element_line(color = "gray95"),
+        plot.title = element_text(size = 16, hjust = 0.5),
+        strip.text = element_text(size = 10),
+        axis.text = element_text(size = 9),
+        axis.title = element_text(size = 12)
+    )
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-shape-hists.pdf")), 
+       plot = plot_histograms, height = 3, width = 10)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-shape-hists.png")), 
+       plot = plot_histograms, height = 900, width = 3000, units = "px")
+
+
+
+
+if(var == "prec") {
+    ylim <- c(-.5, .45)
+} else {
+    ylim <- c(-.5, .5)
+}
+
+# Prepare data for ggplot
+data_stability_shapes <- data.frame(
+    shapes_5 = as.vector(restrict(shapes[,,5])),
+    shapes_1 = as.vector(restrict(shapes[,,1])),
+    shapes_3 = as.vector(restrict(shapes[,,3])),
+    shapes_6 = as.vector(restrict(shapes[,,6])),
+    shapes_8 = as.vector(restrict(shapes[,,8])),
+    shapes_9 = as.vector(restrict(shapes[,,9]))
+)
+
+data_stability_rvs <- data.frame(
+    rvs_5 = as.vector(restrict(rvs[,,3,5])),
+    rvs_1 = as.vector(restrict(rvs[,,3,1])),
+    rvs_3 = as.vector(restrict(rvs[,,3,3])),
+    rvs_6 = as.vector(restrict(rvs[,,3,6])),
+    rvs_8 = as.vector(restrict(rvs[,,3,8])),
+    rvs_9 = as.vector(restrict(rvs[,,3,9]))
+)
+
+# Create individual plots for shape parameter stability
+plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
+    ggplot(data_stability_shapes, aes(x = shapes_5, y = .data[[paste0("shapes_", i)]])) +
+        geom_point(size = 0.5) +
+        geom_abline(slope = 1, intercept = 0, col = "red") +
+        labs(
+            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[5]), ""),
+            y = n_labs[i]
+        ) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+# Create individual plots for AEP depth stability
+plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
+    ggplot(data_stability_rvs, aes(x = rvs_5, y = .data[[paste0("rvs_", i)]])) +
+        geom_point(size = 0.5) +
+        geom_abline(slope = 1, intercept = 0, col = "red") +
+        labs(
+             x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[5]), ""),
+            y = n_labs[i]
+        ) +
+        theme_minimal()
+})
+
+row1_title <- textGrob("Shape parameter estimates", gp = gpar(fontsize = 14, fontface = "bold"))
+row2_title <- textGrob("1-in-100000 year AEP depth estimates (cm)", gp = gpar(fontsize = 14, fontface = "bold"))
+
+# Arrange all plots with titles above each row.
+full_plot <- grid.arrange(
+    row1_title, plot_shapes[[1]], plot_shapes[[2]], plot_shapes[[3]], plot_shapes[[4]], plot_shapes[[5]],
+    row2_title, plot_rvs[[1]], plot_rvs[[2]], plot_rvs[[3]], plot_rvs[[4]], plot_rvs[[5]],
+    ncol = 5,
+    layout_matrix = rbind(
+        c(1, 1, 1, 1, 1),
+        c(2, 3, 4, 5, 6),
+        c(7, 7, 7, 7, 7),
+        c(8, 9, 10, 11, 12)
+    ),
+    heights = c(0.5, 4, 0.5, 4) # Adjust the relative heights of rows
+)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-stability.pdf")), plot = full_plot, height = 6, width = 10)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-stability.png")), plot = full_plot, 
+    height = 1800, width = 3000, units = "px")
+
+# Alternative version that plots difference from n=499 case.
+
+
+# Prepare data for ggplot
+data_stability_shapes_alt <- data.frame(
+    shapes_5 = as.vector(restrict(shapes[,,5])),
+    shapes_1_diff = as.vector(restrict(shapes[,,1]) - restrict(shapes[,,5])),
+    shapes_3_diff = as.vector(restrict(shapes[,,3]) - restrict(shapes[,,5])),
+    shapes_6_diff = as.vector(restrict(shapes[,,6]) - restrict(shapes[,,5])),
+    shapes_8_diff = as.vector(restrict(shapes[,,8]) - restrict(shapes[,,5])),
+    shapes_9_diff = as.vector(restrict(shapes[,,9]) - restrict(shapes[,,5]))
+)
+
+data_stability_rvs_alt <- data.frame(
+    rvs_5 = as.vector(restrict(rvs[,,3,5])),
+    rvs_1_diff = as.vector(restrict(rvs[,,3,1]) - restrict(rvs[,,3,5])),
+    rvs_3_diff = as.vector(restrict(rvs[,,3,3]) - restrict(rvs[,,3,5])),
+    rvs_6_diff = as.vector(restrict(rvs[,,3,6]) - restrict(rvs[,,3,5])),
+    rvs_8_diff = as.vector(restrict(rvs[,,3,8]) - restrict(rvs[,,3,5])),
+    rvs_9_diff = as.vector(restrict(rvs[,,3,9]) - restrict(rvs[,,3,5]))
+)
+
+# Create individual plots for shape parameter stability
+if(var == "prec") {
+    ylim <- c(-.5, .5)
+} else {
+    ylim <- c(-.5, .5)  # Modify for temperature.
+}
+
+plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
+    ggplot(data_stability_shapes_alt, aes(x = shapes_5, y = .data[[paste0("shapes_", i, "_diff")]])) +
+        geom_point(size = 0.5) +
+        labs(
+            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[5]), ""),
+            y = paste0("difference for ", n_labs[i])
+        ) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+# Create individual plots for AEP depth stability
+if(var == "prec") {
+    ylim <- c(-20, 20)
+} else {
+    ylim <- c(-.5, .5)  # Modify for temperature.
+}
+
+plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
+    ggplot(data_stability_rvs_alt, aes(x = rvs_5, y = .data[[paste0("rvs_", i, "_diff")]])) +
+        geom_point(size = 0.5) +
+        labs(
+             x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[5]), ""),
+            y = paste0("difference for ", n_labs[i])
+        ) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+row1_title <- textGrob("Shape parameter estimates", gp = gpar(fontsize = 14, fontface = "bold"))
+row2_title <- textGrob("1-in-100000 year AEP depth estimates (cm)", gp = gpar(fontsize = 14, fontface = "bold"))
+
+# Arrange all plots with titles above each row.
+full_plot <- grid.arrange(
+    row1_title, plot_shapes[[1]], plot_shapes[[2]], plot_shapes[[3]], plot_shapes[[4]], plot_shapes[[5]],
+    row2_title, plot_rvs[[1]], plot_rvs[[2]], plot_rvs[[3]], plot_rvs[[4]], plot_rvs[[5]],
+    ncol = 5,
+    layout_matrix = rbind(
+        c(1, 1, 1, 1, 1),
+        c(2, 3, 4, 5, 6),
+        c(7, 7, 7, 7, 7),
+        c(8, 9, 10, 11, 12)
+    ),
+    heights = c(0.5, 4, 0.5, 4) # Adjust the relative heights of rows
+)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-stability-alt.pdf")), plot = full_plot, height = 6, width = 10)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-stability-alt.png")), plot = full_plot, 
+    height = 1800, width = 3000, units = "px")
+
+
 ## Seasonality
 
 if(var == "prec") {
@@ -662,14 +993,15 @@ if(var == "prec") {
 data_seasonal <- lapply(c(1, 3, 5, 7), function(i) {
     data.frame(
         full_year_rv = as.vector(restrict(rvs[,,3,i])),
-        max_seasonal_rv = as.vector(restrict(rvs_max_seas[,,3,i])),
+        max_seasonal_rv1 = as.vector(restrict(rvs_max_seas1[,,3,i])),
+        max_seasonal_rv2 = as.vector(restrict(rvs_max_seas2[,,3,i])),
         label = n_labs[i]
     )
 })
 
 # Create individual plots for each label
 plot_seasonal <- lapply(seq_along(data_seasonal), function(i) {
-    ggplot(data_seasonal[[i]], aes(x = full_year_rv, y = max_seasonal_rv)) +
+    ggplot(data_seasonal[[i]], aes(x = full_year_rv, y = max_seasonal_rv1)) +
         geom_point(size = 0.75) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
@@ -689,9 +1021,36 @@ full_plot <- grid.arrange(
 )
 
 
-ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal.pdf")), plot = full_plot, height = 4, width = 9)
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1.pdf")), plot = full_plot, height = 4, width = 9)
 
-ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal.png")), plot = full_plot, 
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1.png")), plot = full_plot, 
+        height = 1200, width = 2700, units = "px")
+
+# Create individual plots for each label
+plot_seasonal <- lapply(seq_along(data_seasonal), function(i) {
+    ggplot(data_seasonal[[i]], aes(x = full_year_rv, y = max_seasonal_rv2)) +
+        geom_point(size = 0.75) +
+        geom_abline(slope = 1, intercept = 0, col = "red") +
+        labs(
+            x = paste0("full-year AEP depth (", units, ")"),
+            y = ifelse(i==1, paste0("max seasonal AEP depth (", units, ")"), ""),
+            title = unique(data_seasonal[[i]]$label)
+        ) +
+        xlim(xlim) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+# Arrange all plots in a single row
+full_plot <- grid.arrange(
+    grobs = plot_seasonal,
+    ncol = 4
+)
+
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2.pdf")), plot = full_plot, height = 4, width = 9)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2.png")), plot = full_plot, 
         height = 1200, width = 2700, units = "px")
 
 ## Uncertainty in AEP depth estimates
