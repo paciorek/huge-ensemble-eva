@@ -34,11 +34,10 @@ par(omi = omi)
 
 load('era5.Rda')
 
-if(var == "prec") {
-    era5_max <- apply(prec_era5, c(1,2), max)
-} else era5_max <- apply(temp_era5, c(1,2), max)               
 
-if(var == "prec") lim <- c(0,35) else lim <- c(25,60)
+era5_max <- apply(prec_era5, c(1,2), max)
+
+lim <- c(0,35)
 
 # Prepare data for ggplot
 data_100 <- data.frame(era5_max = as.vector(restrict(era5_max)), max100 = as.vector(restrict(max100)))
@@ -114,7 +113,7 @@ plot_rvs_1000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
         legend.text = element_text(size = 12), # Reduced text size
         legend.key.size = unit(0.7, "cm"), # Reduced legend key size
         legend.position = "right",
-        plot.title = element_text(size = 15) # Adjusted title size
+        plot.title = element_text(size = 20) # Adjusted title size
     )
 
 plot_rvs_100000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
@@ -131,7 +130,7 @@ plot_rvs_100000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
         legend.text = element_text(size = 12), # Reduced text size
         legend.key.size = unit(0.7, "cm"), # Reduced legend key size
         legend.position = "right",
-        plot.title = element_text(size = 15) # Adjusted title size
+        plot.title = element_text(size = 20) # Adjusted title size
     )
 
 plot_shapes <- ggplot(data_combined, aes(x = lon, y = lat)) +
@@ -148,7 +147,7 @@ plot_shapes <- ggplot(data_combined, aes(x = lon, y = lat)) +
         legend.text = element_text(size = 12), # Reduced text size
         legend.key.size = unit(0.7, "cm"), # Reduced legend key size
         legend.position = "right",
-        plot.title = element_text(size = 15) # Adjusted title size
+        plot.title = element_text(size = 20) # Adjusted title size
     )
 
 full_plot <- grid.arrange(plot_rvs_1000, plot_rvs_100000, plot_shapes, ncol = 3)
@@ -161,7 +160,7 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.png")),
 
 ## Comparison with empirical quantiles
 
-if(var == "prec") ylim <- c(0,60) else ylim <- c(25,60)
+ylim <- c(0,60)
 
 # Prepare data for ggplot
 data_combined <- data.frame(
@@ -284,12 +283,6 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-shape-hists.png")),
 
 
 
-if(var == "prec") {
-    ylim <- c(-.5, .45)
-} else {
-    ylim <- c(-.5, .5)
-}
-
 # Prepare data for ggplot
 data_stability_shapes <- data.frame(
     shapes_5 = as.vector(restrict(shapes[,,5])),
@@ -318,7 +311,7 @@ plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
             x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[5]), ""),
             y = n_labs[i]
         ) +
-        ylim(ylim) +
+        ylim(c(-.5, .45)) +
         theme_minimal()
 })
 
@@ -331,6 +324,7 @@ plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
              x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[5]), ""),
             y = n_labs[i]
         ) +
+        ylim(c(5,45)) +
         theme_minimal()
 })
 
@@ -379,11 +373,8 @@ data_stability_rvs_alt <- data.frame(
 )
 
 # Create individual plots for shape parameter stability
-if(var == "prec") {
-    ylim <- c(-.5, .5)
-} else {
-    ylim <- c(-.5, .5)  # Modify for temperature.
-}
+
+ylim <- c(-.5, .5)
 
 plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
     ggplot(data_stability_shapes_alt, aes(x = shapes_5, y = .data[[paste0("shapes_", i, "_diff")]])) +
@@ -397,11 +388,8 @@ plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
 })
 
 # Create individual plots for AEP depth stability
-if(var == "prec") {
-    ylim <- c(-20, 20)
-} else {
-    ylim <- c(-.5, .5)  # Modify for temperature.
-}
+ylim <- c(-20, 20)
+
 
 plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
     ggplot(data_stability_rvs_alt, aes(x = rvs_5, y = .data[[paste0("rvs_", i, "_diff")]])) +
@@ -439,13 +427,9 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-stability-alt.png")), plot =
 
 ## Seasonality
 
-if(var == "prec") {
-    xlim <- c(0,45)
-    ylim <- c(0,60)
-} else {
-    xlim <- c(25,50)
-    ylim <- c(25,50)
-}
+xlim <- c(0,45)
+ylim <- c(0,60)
+
 
 # Prepare data for ggplot
 data_seasonal <- lapply(c(1, 3, 5, 7), function(i) {
@@ -520,7 +504,7 @@ height = 1200, width = 2700, units = "px")
 emp_cv <- se_rvs / rvs
 
 xlim <- c(-.3, .3)
-if(var == "prec") ylim <- c(0, .35) else ylim <- c(0,.15)
+ylim <- c(0, .35)
 
 # Prepare data for ggplot
 data_uncertainty <- data.frame(
@@ -571,23 +555,17 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-uncertainty.png")), plot 
 
 var <- "temp"
 
-if(var == "prec") {
-    units <- "cm"
-    varLabel <- "precipitation"
-} else {
-    units <- "degrees C"
-    varLabel <- "temperature"
-}
+
+units <- "degrees C"
+varLabel <- "temperature"
 
 load(paste0(var, "_fits.Rda"))
 
 load('era5.Rda')
 
-if(var == "prec") {
-    era5_max <- apply(prec_era5, c(1,2), max)
-} else era5_max <- apply(temp_era5, c(1,2), max)               
+era5_max <- apply(temp_era5, c(1,2), max)
 
-if(var == "prec") lim <- c(0,35) else lim <- c(25,55)
+lim <- c(25,55)
 
 # Prepare data for ggplot
 data_100 <- data.frame(era5_max = as.vector(restrict(era5_max)), max100 = as.vector(restrict(max100)))
@@ -658,7 +636,7 @@ plot_rvs_1000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
         legend.text = element_text(size = 12), # Reduced text size
         legend.key.size = unit(0.7, "cm"), # Reduced legend key size
         legend.position = "right",
-        plot.title = element_text(size = 15) # Adjusted title size
+        plot.title = element_text(size = 20) # Adjusted title size
     )
 
 plot_rvs_100000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
@@ -675,7 +653,7 @@ plot_rvs_100000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
         legend.text = element_text(size = 12), # Reduced text size
         legend.key.size = unit(0.7, "cm"), # Reduced legend key size
         legend.position = "right",
-        plot.title = element_text(size = 15) # Adjusted title size
+        plot.title = element_text(size = 20) # Adjusted title size
     )
 
 plot_shapes <- ggplot(data_combined, aes(x = lon, y = lat)) +
@@ -692,7 +670,7 @@ plot_shapes <- ggplot(data_combined, aes(x = lon, y = lat)) +
         legend.text = element_text(size = 12), # Reduced text size
         legend.key.size = unit(0.7, "cm"), # Reduced legend key size
         legend.position = "right",
-        plot.title = element_text(size = 15) # Adjusted title size
+        plot.title = element_text(size = 20) # Adjusted title size
     )
 
 full_plot <- grid.arrange(plot_rvs_1000, plot_rvs_100000, plot_shapes, ncol = 3)
@@ -703,7 +681,12 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.pdf")),
 ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.png")), 
     plot = full_plot, height = 900, width = 5400, units = "px")
 
-if(var == "prec") ylim <- c(0,60) else ylim <- c(25,60)
+## Comparison with empirical quantiles
+
+load('temp_fits_fixed.Rda')
+rvs_gev <- rvs_gev_fix
+
+ylim <- c(25,50)
 
 
 # Prepare data for ggplot
@@ -824,13 +807,8 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-shape-hists.png")),
        plot = plot_histograms, height = 900, width = 3000, units = "px")
 
 
+ylim <- c(-.5, .5)
 
-
-if(var == "prec") {
-    ylim <- c(-.5, .45)
-} else {
-    ylim <- c(-.5, .5)
-}
 
 # Prepare data for ggplot
 data_stability_shapes <- data.frame(
@@ -921,11 +899,9 @@ data_stability_rvs_alt <- data.frame(
 )
 
 # Create individual plots for shape parameter stability
-if(var == "prec") {
-    ylim <- c(-.5, .5)
-} else {
-    ylim <- c(-.5, .5)  # Modify for temperature.
-}
+
+ylim <- c(-.5, .5)  # Modify for temperature.
+
 
 plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
     ggplot(data_stability_shapes_alt, aes(x = shapes_5, y = .data[[paste0("shapes_", i, "_diff")]])) +
@@ -939,11 +915,8 @@ plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
 })
 
 # Create individual plots for AEP depth stability
-if(var == "prec") {
-    ylim <- c(-20, 20)
-} else {
-    ylim <- c(-.5, .5)  # Modify for temperature.
-}
+ylim <- c(-.5, .5)  # Modify for temperature.
+
 
 plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
     ggplot(data_stability_rvs_alt, aes(x = rvs_5, y = .data[[paste0("rvs_", i, "_diff")]])) +
@@ -980,14 +953,9 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-stability-alt.png")), plot =
 
 
 ## Seasonality
+xlim <- c(25,50)
+ylim <- c(25,50)
 
-if(var == "prec") {
-    xlim <- c(0,45)
-    ylim <- c(0,60)
-} else {
-    xlim <- c(25,50)
-    ylim <- c(25,50)
-}
 
 # Prepare data for ggplot
 data_seasonal <- lapply(c(1, 3, 5, 7), function(i) {
@@ -1058,7 +1026,7 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2.png")), plot = 
 emp_cv <- se_rvs / rvs
 
 xlim <- c(-.3, .3)
-if(var == "prec") ylim <- c(0, .35) else ylim <- c(0,.15)
+ylim <- c(0,.15)
 
 # Prepare data for ggplot
 data_uncertainty <- data.frame(
@@ -1075,7 +1043,7 @@ plot_10000 <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_10000)) +
     ylab("AEP depth relative uncertainty") +
     xlim(xlim) +
     ylim(ylim) +
-    ggtitle("(a) 10000-year") +
+    ggtitle("(a) 1-in-10000 year") +
     theme_minimal()
 
 plot_100000 <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_100000)) +
@@ -1084,7 +1052,7 @@ plot_100000 <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_100000)) +
     ylab("") +
     xlim(xlim) +
     ylim(ylim) +
-    ggtitle("(b) 100000-year") +
+    ggtitle("(b) 1-in-100000year") +
     theme_minimal()
 
 plot_million <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_million)) +
@@ -1093,7 +1061,7 @@ plot_million <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_million)) 
     ylab("") +
     xlim(xlim) +
     ylim(ylim) +
-    ggtitle("(c) million-year") +
+    ggtitle("(c) 1-in-million year") +
     theme_minimal()
 
 # Arrange all plots in a single row
