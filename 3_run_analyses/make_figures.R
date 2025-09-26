@@ -93,7 +93,10 @@ data_combined <- data.frame(
     lat = rep(lat, each = length(lon)),
     rvs_1000 = as.vector(restrict(rvs[,,1,5])),
     rvs_100000 = as.vector(restrict(rvs[,,3,5])),
-    shapes = as.vector(restrict(shapes[,,5]))
+    shapes = as.vector(restrict(shapes[,,5])),
+    rvs_1000_se = as.vector(restrict(se_rvs[,,1,5])),
+    rvs_100000_se = as.vector(restrict(se_rvs[,,3,5])),
+    shapes_se = as.vector(restrict(se_shapes[,,5]))           
 )
 
 data_combined <- data_combined |> filter(lon > -130 & lon < -65 & lat > 25 & lat < 50)
@@ -101,9 +104,9 @@ data_combined <- data_combined |> filter(lon > -130 & lon < -65 & lat > 25 & lat
 # Adjust legend size and position, and increase plot dimensions
 plot_rvs_1000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = rvs_1000)) +
-    scale_fill_viridis_c(limits = c(3, 42), na.value = "white") +
+    scale_fill_viridis_c(na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(a) 1-in-1000 year AEP depth estimates", fill = "") +
+    labs(title = "(a) 1-in-1000 year AEP depth estimate", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -118,9 +121,9 @@ plot_rvs_1000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
 
 plot_rvs_100000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = rvs_100000)) +
-    scale_fill_viridis_c(limits = c(3, 42),na.value = "white") +
+    scale_fill_viridis_c(na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(b) 1-in-100000 year AEP depth estimates", fill = "") +
+    labs(title = "(b) 1-in-100000 year AEP depth estimate", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -137,7 +140,7 @@ plot_shapes <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = shapes)) +
     scale_fill_gradient2(low = "#D55E00", mid = "white", high = "#0072B2", midpoint = 0, na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(c) shape parameter estimates", fill = "") +
+    labs(title = "(c) shape parameter estimate", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -150,13 +153,68 @@ plot_shapes <- ggplot(data_combined, aes(x = lon, y = lat)) +
         plot.title = element_text(size = 20) # Adjusted title size
     )
 
-full_plot <- grid.arrange(plot_rvs_1000, plot_rvs_100000, plot_shapes, ncol = 3)
+plot_rvs_1000_se <- ggplot(data_combined, aes(x = lon, y = lat)) +
+    geom_tile(aes(fill = rvs_1000_se)) +
+    scale_fill_viridis_c(na.value = "white") +
+    borders("state", colour = "grey", size = 0.25) +
+    labs(title = "(d) 1-in-1000 year AEP depth uncertainty", fill = "") +
+    theme_minimal() +
+    theme(
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        legend.text = element_text(size = 12), # Reduced text size
+        legend.key.size = unit(0.7, "cm"), # Reduced legend key size
+        legend.position = "right",
+        plot.title = element_text(size = 20) # Adjusted title size
+    )
+
+plot_rvs_100000_se <- ggplot(data_combined, aes(x = lon, y = lat)) +
+    geom_tile(aes(fill = rvs_100000_se)) +
+    scale_fill_viridis_c(na.value = "white") +
+    borders("state", colour = "grey", size = 0.25) +
+    labs(title = "(e) 1-in-100000 year AEP depth uncertainty", fill = "") +
+    theme_minimal() +
+    theme(
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        legend.text = element_text(size = 12), # Reduced text size
+        legend.key.size = unit(0.7, "cm"), # Reduced legend key size
+        legend.position = "right",
+        plot.title = element_text(size = 20) # Adjusted title size
+    )
+
+plot_shapes_se <- ggplot(data_combined, aes(x = lon, y = lat)) +
+    geom_tile(aes(fill = shapes_se)) +
+    scale_fill_viridis_c(na.value = "white") +
+    borders("state", colour = "grey", size = 0.25) +
+    labs(title = "(f) shape parameter uncertainty", fill = "") +
+    theme_minimal() +
+    theme(
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        legend.text = element_text(size = 12), # Reduced text size
+        legend.key.size = unit(0.7, "cm"), # Reduced legend key size
+        legend.position = "right",
+        plot.title = element_text(size = 20) # Adjusted title size
+    )
+
+full_plot <- grid.arrange(plot_rvs_1000, plot_rvs_100000, plot_shapes,
+                          plot_rvs_1000_se, plot_rvs_100000_se, plot_shapes_se, 
+                          ncol = 3, nrow = 2)
+
+## TODO: check aspect ratio
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.pdf")), 
-    plot = full_plot, height = 3, width = 18)
+    plot = full_plot, height = 6, width = 18)  # was 3
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.png")), 
-    plot = full_plot, height = 900, width = 5400, units = "px")
+    plot = full_plot, height = 1800, width = 5400, units = "px") # was 9
 
 ## Comparison with empirical quantiles
 
@@ -302,6 +360,9 @@ data_stability_rvs <- data.frame(
     rvs_9 = as.vector(restrict(rvs[,,3,9]))
 )
 
+n_labs_augment <- n_labs
+n_labs_augment[1] <- paste0("shape parameter estimate for\n", n_labs[1])
+
 # Create individual plots for shape parameter stability
 plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
     ggplot(data_stability_shapes, aes(x = shapes_5, y = .data[[paste0("shapes_", i)]])) +
@@ -314,6 +375,10 @@ plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
         ylim(c(-.5, .45)) +
         theme_minimal()
 })
+
+n_labs_augment <- n_labs
+n_labs_augment[1] <- paste0("AEP depth estimate for\n", n_labs[1])
+
 
 # Create individual plots for AEP depth stability
 plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
@@ -615,8 +680,11 @@ data_combined <- data.frame(
     lon = rep(lon, length(lat)) - 360,
     lat = rep(lat, each = length(lon)),
     rvs_1000 = as.vector(restrict(rvs[,,1,5])),
+    rvs_1000_se = as.vector(restrict(se_rvs[,,1,5])),
     rvs_100000 = as.vector(restrict(rvs[,,3,5])),
-    shapes = as.vector(restrict(shapes[,,5]))
+    rvs_100000_se = as.vector(restrict(se_rvs[,,3,5])),
+    shapes = as.vector(restrict(shapes[,,5])),
+    shapes_se = as.vector(restrict(se_shapes[,,5]))
 )
 
 data_combined <- data_combined |> filter(lon > -130 & lon < -65 & lat > 25 & lat < 50)
@@ -624,9 +692,9 @@ data_combined <- data_combined |> filter(lon > -130 & lon < -65 & lat > 25 & lat
 # Adjust legend size and position, and increase plot dimensions
 plot_rvs_1000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = rvs_1000)) +
-    scale_fill_viridis_c(limits = c(26, 52), na.value = "white") +
+    scale_fill_viridis_c(na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(a) 1-in-1000 year AEP depth estimates", fill = "") +
+    labs(title = "(a) 1-in-1000 year AEP depth estimate", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -641,9 +709,9 @@ plot_rvs_1000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
 
 plot_rvs_100000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = rvs_100000)) +
-    scale_fill_viridis_c(limits = c(26, 52), na.value = "white") +
+    scale_fill_viridis_c(na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(b) 1-in-100000 year AEP depth estimates", fill = "") +
+    labs(title = "(b) 1-in-100000 year AEP depth estimate", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -660,7 +728,7 @@ plot_shapes <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = shapes)) +
     scale_fill_gradient2(low = "#D55E00", mid = "white", high = "#0072B2", midpoint = 0, na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(c) shape parameter estimates", fill = "") +
+    labs(title = "(c) shape parameter estimate", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -673,13 +741,66 @@ plot_shapes <- ggplot(data_combined, aes(x = lon, y = lat)) +
         plot.title = element_text(size = 20) # Adjusted title size
     )
 
-full_plot <- grid.arrange(plot_rvs_1000, plot_rvs_100000, plot_shapes, ncol = 3)
+plot_rvs_1000_se <- ggplot(data_combined, aes(x = lon, y = lat)) +
+    geom_tile(aes(fill = rvs_1000_se)) +
+    scale_fill_viridis_c(na.value = "white") +
+    borders("state", colour = "grey", size = 0.25) +
+    labs(title = "(d) 1-in-1000 year AEP depth uncertainty", fill = "") +
+    theme_minimal() +
+    theme(
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        legend.text = element_text(size = 12), # Reduced text size
+        legend.key.size = unit(0.7, "cm"), # Reduced legend key size
+        legend.position = "right",
+        plot.title = element_text(size = 20) # Adjusted title size
+    )
+
+plot_rvs_100000_se <- ggplot(data_combined, aes(x = lon, y = lat)) +
+    geom_tile(aes(fill = rvs_100000_se)) +
+    scale_fill_viridis_c(na.value = "white") +
+    borders("state", colour = "grey", size = 0.25) +
+    labs(title = "(e) 1-in-100000 year AEP depth uncertainty", fill = "") +
+    theme_minimal() +
+    theme(
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        legend.text = element_text(size = 12), # Reduced text size
+        legend.key.size = unit(0.7, "cm"), # Reduced legend key size
+        legend.position = "right",
+        plot.title = element_text(size = 20) # Adjusted title size
+    )
+
+plot_shapes_se <- ggplot(data_combined, aes(x = lon, y = lat)) +
+    geom_tile(aes(fill = shapes_se)) +
+    scale_fill_viridis_c(na.value = "white") +
+    borders("state", colour = "grey", size = 0.25) +
+    labs(title = "(f) shape parameter uncertainty", fill = "") +
+    theme_minimal() +
+    theme(
+        axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+        legend.text = element_text(size = 12), # Reduced text size
+        legend.key.size = unit(0.7, "cm"), # Reduced legend key size
+        legend.position = "right",
+        plot.title = element_text(size = 20) # Adjusted title size
+    )
+
+full_plot <- grid.arrange(plot_rvs_1000, plot_rvs_100000, plot_shapes,
+    plot_rvs_1000_se, plot_rvs_100000_se, plot_shapes_se, 
+    ncol = 3, nrow = 2)
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.pdf")), 
-    plot = full_plot, height = 3, width = 18)
+    plot = full_plot, height = 6, width = 18) # 3
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.png")), 
-    plot = full_plot, height = 900, width = 5400, units = "px")
+    plot = full_plot, height = 1800, width = 5400, units = "px") # 900
 
 ## Comparison with empirical quantiles
 

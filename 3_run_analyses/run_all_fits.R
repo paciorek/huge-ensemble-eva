@@ -19,6 +19,7 @@ leaps <- c(365*3+31+29, 365*6+366+31+29, 365*9+366*2+31+29, 365*12+366*3+31+29,
 ## POT
 
 shapes <- array(as.numeric(NA), c(nlon, nlat, nthr))
+se_shapes <- array(as.numeric(NA), c(nlon, nlat, nthr))
 failures <- array(as.numeric(NA), c(nlon, nlat, nthr))
 rvs <- array(as.numeric(NA), c(nlon, nlat, nrp, nthr))
 se_rvs <- array(as.numeric(NA), c(nlon, nlat, nrp, nthr))
@@ -29,6 +30,7 @@ fits <- list(); length(fits) <- nthr
 ## GEV
 
 shapes_gev <- array(as.numeric(NA), c(nlon, nlat))
+se_shapes_gev <- array(as.numeric(NA), c(nlon, nlat))
 failures_gev <- array(as.numeric(NA), c(nlon, nlat))
 rvs_gev <- array(as.numeric(NA), c(nlon, nlat, nrp))
 se_rvs_gev <- array(as.numeric(NA), c(nlon, nlat, nrp))
@@ -41,12 +43,14 @@ nthr_seas <- nthr-2  # Not enough stratified data for highest thresholds when us
 fits_seas1 <- list();  length(fits_seas1) <- nthr_seas
 
 shapes_seas1 <- array(as.numeric(NA), c(nlon, nlat, 4, nthr_seas))
+se_shapes_seas1 <- array(as.numeric(NA), c(nlon, nlat, 4, nthr_seas))
 failures_seas1 <- array(as.numeric(NA), c(nlon, nlat, 4, nthr_seas))
 rvs_seas1 <- array(as.numeric(NA), c(nlon, nlat, 4, nrp, nthr_seas))
 se_rvs_seas1 <- array(as.numeric(NA), c(nlon, nlat, 4, nrp, nthr_seas))
 ns_seas1 <- array(as.numeric(NA), c(nlon, nlat, 4, nthr_seas))
 
 shapes_seas2 <- array(as.numeric(NA), c(nlon, nlat, 4, nthr))
+se_shapes_seas2 <- array(as.numeric(NA), c(nlon, nlat, 4, nthr))
 failures_seas2 <- array(as.numeric(NA), c(nlon, nlat, 4, nthr))
 rvs_seas2 <- array(as.numeric(NA), c(nlon, nlat, 4, nrp, nthr))
 se_rvs_seas2 <- array(as.numeric(NA), c(nlon, nlat, 4, nrp, nthr))
@@ -81,6 +85,7 @@ for(focal_lon in seq_len(nlon)) {
         failures[focal_lon, focal_lat,] <- sapply(fits, function(x) x$info$failure)
         wh <- !failures[focal_lon, focal_lat,]
         shapes[focal_lon, focal_lat, wh] <- sapply(fits[wh], function(x) x$mle['shape'])
+        se_shapes[focal_lon, focal_lat, wh] <- sapply(fits[wh], function(x) x$se_mle['shape'])        
         rvs[focal_lon, focal_lat, seq_len(nrp), wh] <- sapply(fits[wh], function(x) x$returnValue)
         se_rvs[focal_lon, focal_lat, seq_len(nrp), wh] <- sapply(fits[wh], function(x) x$se_returnValue)
 
@@ -96,6 +101,7 @@ for(focal_lon in seq_len(nlon)) {
         failures_gev[focal_lon, focal_lat] <- fit_gev$info$failure
         if(!fit_gev$info$failure) {
             shapes_gev[focal_lon, focal_lat] <- fit_gev$mle['shape']
+            se_shapes_gev[focal_lon, focal_lat] <- fit_gev$se_mle['shape']
             rvs_gev[focal_lon, focal_lat, ] <- fit_gev$returnValue
             se_rvs_gev[focal_lon, focal_lat, ] <- fit_gev$se_returnValue
         }
@@ -119,6 +125,7 @@ for(focal_lon in seq_len(nlon)) {
             wh <- !failures_seas1[focal_lon, focal_lat,j,]
             if(sum(wh)) {
                 shapes_seas1[focal_lon, focal_lat, j, wh] <- sapply(fits_seas1[wh], function(x) x$mle['shape'])
+                se_shapes_seas1[focal_lon, focal_lat, j, wh] <- sapply(fits_seas1[wh], function(x) x$se_mle['shape'])
                 rvs_seas1[focal_lon, focal_lat, j, seq_len(nrp), wh] <- sapply(fits_seas1[wh], function(x) x$returnValue)
                 se_rvs_seas1[focal_lon, focal_lat, j, seq_len(nrp), wh] <- sapply(fits_seas1[wh], function(x) x$se_returnValue)
             }
@@ -138,6 +145,7 @@ for(focal_lon in seq_len(nlon)) {
             wh <- !failures_seas2[focal_lon, focal_lat,j,]
             if(sum(wh)) {
                 shapes_seas2[focal_lon, focal_lat, j, wh] <- sapply(fits_seas2[wh], function(x) x$mle['shape'])
+                se_shapes_seas2[focal_lon, focal_lat, j, wh] <- sapply(fits_seas2[wh], function(x) x$se_mle['shape'])
                 rvs_seas2[focal_lon, focal_lat, j, seq_len(nrp), wh] <- sapply(fits_seas2[wh], function(x) x$returnValue)
                 se_rvs_seas2[focal_lon, focal_lat, j, seq_len(nrp), wh] <- sapply(fits_seas2[wh], function(x) x$se_returnValue)
             }
@@ -159,11 +167,11 @@ max1000 <- apply(daily, c(1,2), function(x) max(x[1:(1000*365)]))
 max10000 <- apply(daily, c(1,2), max)
 
 save(qs, returnPeriods, emp_qs,
-    ns, failures, shapes, rvs, se_rvs,
+    ns, failures, shapes, se_shapes, rvs, se_rvs,
     emp_quants,
-    failures_gev, shapes_gev, rvs_gev, se_rvs_gev,
-    ns_seas1, failures_seas1, shapes_seas1, rvs_seas1, se_rvs_seas1, rvs_max_seas1, max_seas1,
-    ns_seas2, failures_seas2, shapes_seas2, rvs_seas2, se_rvs_seas2, rvs_max_seas2, max_seas2,
+    failures_gev, shapes_gev, se_shapes_gev, rvs_gev, se_rvs_gev,
+    ns_seas1, failures_seas1, shapes_seas1, se_shapes_seas1, rvs_seas1, se_rvs_seas1, rvs_max_seas1, max_seas1,
+    ns_seas2, failures_seas2, shapes_seas2, se_shapes_seas2, rvs_seas2, se_rvs_seas2, rvs_max_seas2, max_seas2,
     max100, max1000, max10000,
     file = paste0(var, '_fits.Rda'))
 
