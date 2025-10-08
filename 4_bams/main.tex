@@ -15,9 +15,9 @@
 % Word count: Submissions with >4500 require justification and I think we want to stay under that.   
 
 
-\abstract{Weather extremes produce major impacts on society and ecosystems and are likely to change in likelihood and magnitude with climate change. However, very low probability events are hard to characterize statistically using observations or even climate model output because of short records/runs. For precipitation, consideration of such events arises in quantifying Probable Maximum Precipitation (PMP), namely estimating extreme precipitation magnitudes for designing and assessing critical infrastructure. A recent National Academies report on modernizing PMP estimation proposed using very large climate model-based ensembles to estimate extreme quantiles, possibly through machine learning-based ensemble boosting. Here we assess such an approach for the contiguous United States using a huge ensemble (10560 years) produced by a state-of-the-art emulator (ACE2) trained on ERA5 reanalysis.
-The results indicate that one can practically estimate very extreme precipitation and temperature quantiles, provided one uses appropriate statistical extreme value techniques. More specifically, the results provide evidence for (1) the use of threshold-exceedance methods with a sufficiently high threshold for reliable estimation (necessary for precipitation), (2) the robustness of results to variation in extremes by season and storm type, and (3) the sufficiency of the ensemble for well-constrained statistical uncertainty.
-Our results also show that the emulator produces extremes outside the range of the ERA5 training data.  While this suggests that such emulators have potential for quantifying the climatology of extremes, we do not extensively investigate if this particular emulator is fit for purpose. Our focus is on how to use huge ensembles to estimate very extreme statistics, and we expect the results to be relevant for future, presumably improved emulators.}
+\abstract{Weather extremes produce major impacts on society and ecosystems and are likely to change in likelihood and magnitude with climate change. However, very low probability events are hard to characterize statistically using observations or climate model output because of short records/runs. For precipitation, consideration of such events arises in quantifying Probable Maximum Precipitation (PMP), namely estimating extreme precipitation magnitudes for designing and assessing critical infrastructure. A recent National Academies report on modernizing PMP estimation proposed using huge climate model-based ensembles to estimate extreme quantiles, possibly through machine learning-based ensemble boosting. Here we assess such an approach for the contiguous United States using a huge ensemble (10560 years) from a state-of-the-art emulator (ACE2) trained on ERA5 reanalysis.
+The results indicate that one can practically estimate very extreme precipitation and temperature quantiles using appropriate statistical extreme value techniques. More specifically, the results provide evidence for (1) the use of threshold-exceedance methods with a sufficiently high threshold for reliable estimation (necessary for precipitation), (2) the robustness of results to variations in extremes by season and storm type, and (3) well-constrained statistical uncertainty.
+Our results also show that the emulator produces extremes outside the range of the ERA5 training data.  While this suggests that such emulators have potential for quantifying the climatology of extremes, we do not extensively investigate if this particular emulator is fit for purpose. Our focus is on how to use huge ensembles to estimate very extreme statistics, and we expect the results to be relevant for future improved emulators.}
 
 
 
@@ -435,7 +435,7 @@ Fig. \ref{fig:prec-rv-seasonal1} shows that if one fits season-specific POT mode
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=\linewidth]{temp-rv-seasonal1.pdf}
+    \includegraphics[width=\linewidth]{prec-rv-seasonal1.pdf}
     \caption{Comparison of 1-in-100000 year AEP precipitation depth estimates based on analysis of full-year data to maximum of seasonally-stratified estimates. Results are shown for the first approach discussed in the methods. One-to-one lines are in red.}
     \label{fig:prec-rv-seasonal1}
 \end{figure}
