@@ -1173,7 +1173,7 @@ plot_100000 <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_100000)) +
     ylab("") +
     xlim(xlim) +
     ylim(ylim) +
-    ggtitle("(b) 1-in-100000year") +
+    ggtitle("(b) 1-in-100000 year") +
     theme_minimal()
 
 plot_million <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_million)) +
