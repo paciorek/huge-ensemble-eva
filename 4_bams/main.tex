@@ -15,15 +15,17 @@
 % Word count: Submissions with >4500 require justification and I think we want to stay under that.   
 
 
-\abstract{Weather extremes produce major impacts on society and ecosystems and are likely to change in likelihood and magnitude with climate change. However, very low probability events are hard to characterize statistically using observations or climate model output because of short records/runs. For precipitation, consideration of such events arises in quantifying Probable Maximum Precipitation (PMP), namely estimating extreme precipitation magnitudes for designing and assessing critical infrastructure. A recent National Academies report on modernizing PMP estimation proposed using huge climate model-based ensembles to estimate extreme quantiles, possibly through machine learning-based ensemble boosting. Here we assess such an approach for the contiguous United States using a huge ensemble (10560 years) from a state-of-the-art emulator (ACE2) trained on ERA5 reanalysis.
-The results indicate that one can practically estimate very extreme precipitation and temperature quantiles using appropriate statistical extreme value techniques. More specifically, the results provide evidence for (1) the use of threshold-exceedance methods with a sufficiently high threshold for reliable estimation (necessary for precipitation), (2) the robustness of results to variations in extremes by season and storm type, and (3) well-constrained statistical uncertainty.
-Our results also show that the emulator produces extremes outside the range of the ERA5 training data.  While this suggests that such emulators have potential for quantifying the climatology of extremes, we do not extensively investigate if this particular emulator is fit for purpose. Our focus is on how to use huge ensembles to estimate very extreme statistics, and we expect the results to be relevant for future improved emulators.}
+\abstract{Weather extremes produce major impacts on society and ecosystems and are likely to change in likelihood and magnitude with climate change. However, very low probability events are hard to characterize statistically using observations or even climate model output because of short records/runs. For precipitation, consideration of such events arises in quantifying Probable Maximum Precipitation (PMP), namely estimating extreme precipitation magnitudes for designing and assessing critical infrastructure. A recent National Academies report on modernizing PMP estimation proposed using very large climate model-based ensembles to estimate extreme quantiles, possibly through machine learning-based ensemble boosting. Here we assess such an approach for the contiguous United States using a huge ensemble (10560 years) produced by a state-of-the-art emulator (ACE2) trained on ERA5 reanalysis.
+The results indicate that one can practically estimate very extreme precipitation and temperature quantiles, provided one uses appropriate statistical extreme value techniques. More specifically, the results provide evidence for (1) the use of threshold-exceedance methods with a sufficiently high threshold for reliable estimation (necessary for precipitation), (2) the robustness of results to variation in extremes by season and storm type, and (3) the sufficiency of the ensemble for well-constrained statistical uncertainty.
+Our results also show that the emulator produces extremes outside the range of the ERA5 training data.  While this suggests that such emulators have potential for quantifying the climatology of extremes, we do not extensively investigate if this particular emulator is fit for purpose. Our focus is on how to use huge ensembles to estimate very extreme statistics, and we expect the results to be relevant for future, presumably improved emulators.}
 
 
 
 \begin{document}
 
 \maketitle 
+\statement   
+Weather extremes produce major impacts on society and ecosystems and are likely to change in likelihood and magnitude with climate change. Machine learning now provides methods to simulate weather for many hypothetical years at much lower computational expense than traditional models. This provides the opportunity to estimate the magnitude of very low probability events using statistical methods applied to the simulation output, for use in planning, risk assessment, and adaptation. Our work finds that when used appropriately, statistical methods designed to analyze extremes can reliably estimate the magnitude of extremely high precipitation and temperature events in the United States, under the critical assumption that the machine learning method is a good mimic of real world weather.  
 
 \capsule 
 Statistical analysis of 10560 years of simulated weather from a machine learning-based climate model emulator provides an approach to estimating the magnitude of very extreme precipitation and temperature events.
@@ -364,13 +366,12 @@ We thank the Allen Institute/ACE2 project for providing the trained emulator, in
 All code for creating the ensemble and analyzing the output is available on GitHub at \url{https://github.com/paciorek/huge-ensemble-eva}.
 All input data for the emulator are also available, as summarized in Appendix A, with more details in the GitHub repository above.
 
-\bibliographystyle{ametsocV6}
-\bibliography{refs}
+
 
 %%%% to comment out appendix, \end{comment} at end ~line 470
 %\begin{comment}
     
-
+\clearpage
 \appendix[A] 
 \appendixtitle{Methods details}
 \label{app-methods}
@@ -469,6 +470,9 @@ Fig. \ref{fig:temp-rv-seasonal1} shows that if one fits season-specific POT mode
     \label{fig:temp-rv-seasonal1}
 \end{figure}
 
+\clearpage
+\bibliographystyle{ametsocV6}
+\bibliography{refs}
 %\end{comment}
 
 \end{document}
