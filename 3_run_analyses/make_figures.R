@@ -7,33 +7,28 @@ library(dplyr)
 library(grid)
 
 source("restrict_contig_US.R")
-
-var <- "prec"
-
-if(var == "prec") {
-    units <- "cm"
-    varLabel <- "precipitation"
-} else {
-    units <- "deg. C"
-    varLabel <- "temperature"
-}
-
-load(paste0(var, "_fits.Rda"))
-
 source("init.R")
+
+
 
 qs_round <- round(qs, 5)
 labs <-  paste0("thresh = ", qs_round, "%")
 n_labs <- paste0("n = ", ns[1,1,])
 
 omi <- c(0,0,.3,0)
-
 par(omi = omi)
-
-# Compare emulator maxes with ERA5 maxes.
 
 load('era5.Rda')
 
+## Precipitation
+
+var <- "prec"
+
+units <- "cm"
+
+load(paste0(var, "_fits.Rda"))
+
+# Compare emulator maxes with ERA5 maxes.
 
 era5_max <- apply(prec_era5, c(1,2), max)
 
@@ -85,18 +80,38 @@ full_plot <- grid.arrange(plot_100, plot_1000, plot_10000, ncol = 3)
 ggsave(filename = file.path(plot_dir, paste0(var, "-compare-era5.png")), 
     plot = full_plot, height = 1200, width = 3000, units = "px")
 
+# Check only 2001-2022 (revision)
+
+nT <- dim(prec_era5)[3]
+
+era5_max <- apply(prec_era5[,,(nT-ndays+1):nT], c(1,2), max)
+data_22 <- data.frame(era5_max = as.vector(restrict(era5_max)), max22 = as.vector(restrict(max22)))
+
+plot_22 <- ggplot(data_22, aes(x = era5_max, y = max22)) +
+    geom_point(size = 0.65) +
+    geom_abline(slope = 1, intercept = 0, col = "red") +
+    xlab("") + 
+    ylab(paste0("max (", units, ") in 22 emulator years")) +
+    xlab("max (", units, ") in ERA5, 2001-2022") + 
+    xlim(lim) + ylim(lim) +
+    theme_minimal()
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-compare-era5-2001-2022.pdf")),
+       plot = plot_22, height = 4, width = 4)
+
+
 # Create maps of extremes climatology.
 
 # Prepare data for ggplot
 data_combined <- data.frame(
     lon = rep(lon, length(lat)) - 360,
     lat = rep(lat, each = length(lon)),
-    rvs_1000 = as.vector(restrict(rvs[,,1,5])),
-    rvs_100000 = as.vector(restrict(rvs[,,3,5])),
-    shapes = as.vector(restrict(shapes[,,5])),
-    rvs_1000_se = as.vector(restrict(se_rvs[,,1,5])),
-    rvs_100000_se = as.vector(restrict(se_rvs[,,3,5])),
-    shapes_se = as.vector(restrict(se_shapes[,,5]))           
+    rvs_1000 = as.vector(restrict(rvs[,,1,6])),
+    rvs_100000 = as.vector(restrict(rvs[,,3,6])),
+    shapes = as.vector(restrict(shapes[,,6])),
+    rvs_1000_se = as.vector(restrict(se_rvs[,,1,6])),
+    rvs_100000_se = as.vector(restrict(se_rvs[,,3,6])),
+    shapes_se = as.vector(restrict(se_shapes[,,6]))           
 )
 
 data_combined <- data_combined |> filter(lon > -130 & lon < -65 & lat > 25 & lat < 50)
@@ -208,8 +223,6 @@ full_plot <- grid.arrange(plot_rvs_1000, plot_rvs_100000, plot_shapes,
                           plot_rvs_1000_se, plot_rvs_100000_se, plot_shapes_se, 
                           ncol = 3, nrow = 2)
 
-## TODO: check aspect ratio
-
 ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.pdf")), 
     plot = full_plot, height = 6, width = 18)  # was 3
 
@@ -224,11 +237,11 @@ ylim <- c(0,60)
 data_combined <- data.frame(
     emp_quants_1 = as.vector(restrict(emp_quants[,,1])),
     emp_quants_2 = as.vector(restrict(emp_quants[,,2])),
-    rvs_gev_1 = as.vector(restrict(rvs_gev[,,1])),
-    rvs_gev_2 = as.vector(restrict(rvs_gev[,,2]))
+    rvs_gev_1 = as.vector(restrict(rvs_gev[,,1,1])),
+    rvs_gev_2 = as.vector(restrict(rvs_gev[,,2,1]))
 )
 
-for(i in c(1,3,5,7)) {
+for(i in c(1,2,4,6,8)) {
     data_combined[[paste0("rvs_pot_1_", i)]] <- as.vector(restrict(rvs[,,1,i]))
     data_combined[[paste0("rvs_pot_2_", i)]] <- as.vector(restrict(rvs[,,2,i]))
 }
@@ -241,7 +254,7 @@ plot_gev_1 <- ggplot(data_combined, aes(x = emp_quants_1, y = rvs_gev_1)) +
     ylim(ylim) +
     theme_minimal()
 
-plot_pot_1 <- lapply(c(1,3,5,7), function(i) {
+plot_pot_1 <- lapply(c(2,4,6,8), function(i) {
     ggplot(data_combined, aes(x = emp_quants_1, y = .data[[paste0("rvs_pot_1_", i)]]))+
         geom_point(size = 0.65) +
         geom_abline(slope = 1, intercept = 0, col = 'red') +
@@ -259,7 +272,7 @@ plot_gev_2 <- ggplot(data_combined, aes(x = emp_quants_2, y = rvs_gev_2)) +
     ylim(ylim) +
     theme_minimal()
 
-plot_pot_2 <- lapply(c(1,3,5,7), function(i) {
+plot_pot_2 <- lapply(c(2,4,6,8), function(i) {
     ggplot(data_combined, aes(x = emp_quants_2, y = .data[[paste0("rvs_pot_2_", i)]]))+
         geom_point(size = 0.65) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
@@ -289,13 +302,92 @@ full_plot <- grid.arrange(
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias.pdf")), plot = full_plot, height = 8, width = 12)
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias.png")), plot = full_plot, 
-    height = 1600, width = 2400, units = "px")
+       height = 1600, width = 2400, units = "px")
+
+# Do analysis with POT analogous to annual max (revision)
+
+i <- 1  # POT analogous to annual max.
+
+plot_pot0_1 <- ggplot(data_combined, aes(x = emp_quants_1, y = .data[[paste0("rvs_pot_1_", i)]]))+
+        geom_point(size = 0.65) +
+        geom_abline(slope = 1, intercept = 0, col = 'red') +
+        labs(x = ifelse(i==3, "empirical quantile-based AEP depth estimates", ""),
+            y = paste0("POT, n = 10560")) + 
+        ylim(ylim) +
+    theme_minimal()
+
+plot_pot0_2 <- ggplot(data_combined, aes(x = emp_quants_2, y = .data[[paste0("rvs_pot_2_", i)]]))+
+        geom_point(size = 0.65) +
+        geom_abline(slope = 1, intercept = 0, col = 'red') +
+        labs(x = ifelse(i==3, "empirical quantile-based AEP depth estimates", ""),
+            y = paste0("POT, n = 10560")) + 
+        ylim(ylim) +
+    theme_minimal()
+
+full_plot <- grid.arrange(
+    row1_title, plot_pot0_1, plot_pot_1[[1]], plot_pot_1[[2]], plot_pot_1[[3]], plot_pot_1[[4]],
+    row2_title, plot_pot0_2, plot_pot_2[[1]], plot_pot_2[[2]], plot_pot_2[[3]], plot_pot_2[[4]],
+    ncol = 5,
+    layout_matrix = rbind(
+        c(1, 1, 1, 1, 1),
+        c(2, 3, 4, 5, 6),
+        c(7, 7, 7, 7, 7),
+        c(8, 9, 10, 11, 12)
+    ),
+    heights = c(0.5, 4, 0.5, 4) # Adjust the relative heights of rows
+)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias-pot-only.pdf")), plot = full_plot, height = 8, width = 12)
+
+# Do analysis with GEV with varying block lengths (revision)
+
+n_labs_gev <- paste0(blockLens, "-year maxima")
+
+for(i in c(1,2,4,6,7)) {
+    data_combined[[paste0("rvs_gev_1_", i)]] <- as.vector(restrict(rvs_gev[,,1,i]))
+    data_combined[[paste0("rvs_gev_2_", i)]] <- as.vector(restrict(rvs_gev[,,2,i]))
+}
+
+plot_gev_1 <- lapply(c(1,2,4,6,7), function(i) {
+    ggplot(data_combined, aes(x = emp_quants_1, y = .data[[paste0("rvs_gev_1_", i)]]))+
+        geom_point(size = 0.65) +
+        geom_abline(slope = 1, intercept = 0, col = 'red') +
+        labs(x = ifelse(i==3, "empirical quantile-based AEP depth estimates", ""),
+            y = paste0("GEV, ", n_labs_gev[i])) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+plot_gev_2 <- lapply(c(1,2,4,6,7), function(i) {
+    ggplot(data_combined, aes(x = emp_quants_2, y = .data[[paste0("rvs_gev_2_", i)]]))+
+        geom_point(size = 0.65) +
+        geom_abline(slope = 1, intercept = 0, col = 'red') +
+        labs(x = ifelse(i==3, "empirical quantile-based AEP depth estimates", ""),
+            y = paste0("GEV, ", n_labs_gev[i])) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+full_plot <- grid.arrange(
+    row1_title, plot_gev_1[[1]], plot_gev_1[[2]], plot_gev_1[[3]], plot_gev_1[[4]], plot_gev_1[[5]],
+    row2_title, plot_gev_2[[1]], plot_gev_2[[2]], plot_gev_2[[3]], plot_gev_2[[4]], plot_gev_2[[5]],
+    ncol = 5,
+    layout_matrix = rbind(
+        c(1, 1, 1, 1, 1),
+        c(2, 3, 4, 5, 6),
+        c(7, 7, 7, 7, 7),
+        c(8, 9, 10, 11, 12)
+    ),
+    heights = c(0.5, 4, 0.5, 4) # Adjust the relative heights of rows
+)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias-gev-only.pdf")), plot = full_plot, height = 8, width = 12)
 
 ## Shape parameter and AEP depth stability
 
 # Prepare data for ggplot
 data_histograms <- data.frame()
-for(i in c(1,3,5,7,9)) {
+for(i in c(2,4,6,8,10)) {
     values <- as.vector(restrict(shapes[,,i]))
     values <- values[!is.na(values)]
     pct_negative <- 100 * round(mean(values < 0, na.rm = TRUE), 2)
@@ -343,33 +435,33 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-shape-hists.png")),
 
 # Prepare data for ggplot
 data_stability_shapes <- data.frame(
-    shapes_5 = as.vector(restrict(shapes[,,5])),
-    shapes_1 = as.vector(restrict(shapes[,,1])),
-    shapes_3 = as.vector(restrict(shapes[,,3])),
-    shapes_6 = as.vector(restrict(shapes[,,6])),
-    shapes_8 = as.vector(restrict(shapes[,,8])),
-    shapes_9 = as.vector(restrict(shapes[,,9]))
+    shapes_5 = as.vector(restrict(shapes[,,6])),
+    shapes_1 = as.vector(restrict(shapes[,,2])),
+    shapes_3 = as.vector(restrict(shapes[,,4])),
+    shapes_6 = as.vector(restrict(shapes[,,7])),
+    shapes_8 = as.vector(restrict(shapes[,,9])),
+    shapes_9 = as.vector(restrict(shapes[,,10]))
 )
 
 data_stability_rvs <- data.frame(
-    rvs_5 = as.vector(restrict(rvs[,,3,5])),
-    rvs_1 = as.vector(restrict(rvs[,,3,1])),
-    rvs_3 = as.vector(restrict(rvs[,,3,3])),
-    rvs_6 = as.vector(restrict(rvs[,,3,6])),
-    rvs_8 = as.vector(restrict(rvs[,,3,8])),
-    rvs_9 = as.vector(restrict(rvs[,,3,9]))
+    rvs_5 = as.vector(restrict(rvs[,,3,6])),
+    rvs_1 = as.vector(restrict(rvs[,,3,2])),
+    rvs_3 = as.vector(restrict(rvs[,,3,4])),
+    rvs_6 = as.vector(restrict(rvs[,,3,7])),
+    rvs_8 = as.vector(restrict(rvs[,,3,9])),
+    rvs_9 = as.vector(restrict(rvs[,,3,10]))
 )
 
 n_labs_augment <- n_labs
 n_labs_augment[1] <- paste0("shape parameter estimate for\n", n_labs[1])
 
 # Create individual plots for shape parameter stability
-plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
+plot_shapes <- lapply(c(2,4,7,9,10), function(i) {
     ggplot(data_stability_shapes, aes(x = shapes_5, y = .data[[paste0("shapes_", i)]])) +
         geom_point(size = 0.5) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
-            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[5]), ""),
+            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[6]), ""),
             y = n_labs[i]
         ) +
         ylim(c(-.5, .45)) +
@@ -381,12 +473,12 @@ n_labs_augment[1] <- paste0("AEP depth estimate for\n", n_labs[1])
 
 
 # Create individual plots for AEP depth stability
-plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
+plot_rvs <- lapply(c(2,4,7,9,10), function(i) {
     ggplot(data_stability_rvs, aes(x = rvs_5, y = .data[[paste0("rvs_", i)]])) +
         geom_point(size = 0.5) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
-             x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[5]), ""),
+             x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[6]), ""),
             y = n_labs[i]
         ) +
         ylim(c(5,45)) +
@@ -420,32 +512,32 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-stability.png")), plot = ful
 
 # Prepare data for ggplot
 data_stability_shapes_alt <- data.frame(
-    shapes_5 = as.vector(restrict(shapes[,,5])),
-    shapes_1_diff = as.vector(restrict(shapes[,,1]) - restrict(shapes[,,5])),
-    shapes_3_diff = as.vector(restrict(shapes[,,3]) - restrict(shapes[,,5])),
-    shapes_6_diff = as.vector(restrict(shapes[,,6]) - restrict(shapes[,,5])),
-    shapes_8_diff = as.vector(restrict(shapes[,,8]) - restrict(shapes[,,5])),
-    shapes_9_diff = as.vector(restrict(shapes[,,9]) - restrict(shapes[,,5]))
+    shapes_6 = as.vector(restrict(shapes[,,6])),
+    shapes_2_diff = as.vector(restrict(shapes[,,2]) - restrict(shapes[,,6])),
+    shapes_4_diff = as.vector(restrict(shapes[,,4]) - restrict(shapes[,,6])),
+    shapes_7_diff = as.vector(restrict(shapes[,,7]) - restrict(shapes[,,6])),
+    shapes_9_diff = as.vector(restrict(shapes[,,9]) - restrict(shapes[,,6])),
+    shapes_10_diff = as.vector(restrict(shapes[,,10]) - restrict(shapes[,,6]))
 )
 
 data_stability_rvs_alt <- data.frame(
-    rvs_5 = as.vector(restrict(rvs[,,3,5])),
-    rvs_1_diff = as.vector(restrict(rvs[,,3,1]) - restrict(rvs[,,3,5])),
-    rvs_3_diff = as.vector(restrict(rvs[,,3,3]) - restrict(rvs[,,3,5])),
-    rvs_6_diff = as.vector(restrict(rvs[,,3,6]) - restrict(rvs[,,3,5])),
-    rvs_8_diff = as.vector(restrict(rvs[,,3,8]) - restrict(rvs[,,3,5])),
-    rvs_9_diff = as.vector(restrict(rvs[,,3,9]) - restrict(rvs[,,3,5]))
+    rvs_6 = as.vector(restrict(rvs[,,3,6])),
+    rvs_2_diff = as.vector(restrict(rvs[,,3,2]) - restrict(rvs[,,3,6])),
+    rvs_4_diff = as.vector(restrict(rvs[,,3,4]) - restrict(rvs[,,3,6])),
+    rvs_7_diff = as.vector(restrict(rvs[,,3,7]) - restrict(rvs[,,3,6])),
+    rvs_9_diff = as.vector(restrict(rvs[,,3,9]) - restrict(rvs[,,3,6])),
+    rvs_10_diff = as.vector(restrict(rvs[,,3,10]) - restrict(rvs[,,3,6]))
 )
 
 # Create individual plots for shape parameter stability
 
 ylim <- c(-.5, .5)
 
-plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
+plot_shapes <- lapply(c(2,4,7,9,10), function(i) {
     ggplot(data_stability_shapes_alt, aes(x = shapes_5, y = .data[[paste0("shapes_", i, "_diff")]])) +
         geom_point(size = 0.5) +
         labs(
-            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[5]), ""),
+            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[6]), ""),
             y = paste0("difference for ", n_labs[i])
         ) +
         ylim(ylim) +
@@ -456,11 +548,11 @@ plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
 ylim <- c(-20, 20)
 
 
-plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
+plot_rvs <- lapply(c(2,4,7,9,10), function(i) {
     ggplot(data_stability_rvs_alt, aes(x = rvs_5, y = .data[[paste0("rvs_", i, "_diff")]])) +
         geom_point(size = 0.5) +
         labs(
-             x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[5]), ""),
+             x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[6]), ""),
             y = paste0("difference for ", n_labs[i])
         ) +
         ylim(ylim) +
@@ -495,9 +587,10 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-stability-alt.png")), plot =
 xlim <- c(0,45)
 ylim <- c(0,60)
 
+# Original version of seasonal analysis using maximum return value over the four seasons.
 
 # Prepare data for ggplot
-data_seasonal <- lapply(c(1, 3, 5, 7), function(i) {
+data_seasonal <- lapply(c(2,4,6,8), function(i) {
     data.frame(
         full_year_rv = as.vector(restrict(rvs[,,3,i])),
         max_seasonal_rv1 = as.vector(restrict(rvs_max_seas1[,,3,i])),
@@ -528,7 +621,6 @@ full_plot <- grid.arrange(
     grobs = plot_seasonal,
     ncol = 4
 )
-
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1.pdf")), plot = full_plot, height = 4, width = 9)
 
@@ -564,6 +656,66 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2.png")), plot = 
 height = 1200, width = 2700, units = "px")
 
 
+# Fixed version of seasonal analysis with sum of seasonal probs equal to desired probability.
+
+data_seasonal <- lapply(c(2,4,6,8), function(i) {
+    data.frame(
+        full_year_rv = as.vector(restrict(rvs[,,3,i])),
+        full_seasonal_rv1 = as.vector(restrict(rvs_full_seas1[,,3,i])),
+        full_seasonal_rv2 = as.vector(restrict(rvs_full_seas2[,,3,i])),
+        label = n_labs[i]
+    )
+})
+
+# Version 1 of seasonal analysis - use same thresholds as full year analysis
+
+# Create individual plots for each label
+plot_seasonal <- lapply(seq_along(data_seasonal), function(i) {
+    ggplot(data_seasonal[[i]], aes(x = full_year_rv, y = full_seasonal_rv1)) +
+        geom_point(size = 0.75) +
+        geom_abline(slope = 1, intercept = 0, col = "red") +
+        labs(
+            x = paste0("full-year AEP depth (", units, ")"),
+            y = ifelse(i==1, paste0("aggregated seasonal AEP depth (", units, ")"), ""),
+            title = unique(data_seasonal[[i]]$label)
+        ) +
+        xlim(xlim) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+# Arrange all plots in a single row
+full_plot <- grid.arrange(
+    grobs = plot_seasonal,
+    ncol = 4
+)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1-revised.pdf")), plot = full_plot, height = 4, width = 9)
+
+# Version 2 of seasonal analysis - use same number of exceedances in each season as in full year
+
+plot_seasonal <- lapply(seq_along(data_seasonal), function(i) {
+    ggplot(data_seasonal[[i]], aes(x = full_year_rv, y = full_seasonal_rv2)) +
+        geom_point(size = 0.75) +
+        geom_abline(slope = 1, intercept = 0, col = "red") +
+        labs(
+            x = paste0("full-year AEP depth (", units, ")"),
+            y = ifelse(i==1, paste0("aggregated seasonal AEP depth (", units, ")"), ""),
+            title = unique(data_seasonal[[i]]$label)
+        ) +
+        xlim(xlim) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+# Arrange all plots in a single row
+full_plot <- grid.arrange(
+    grobs = plot_seasonal,
+    ncol = 4
+)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2-revised.pdf")), plot = full_plot, height = 4, width = 9)
+
 ## Uncertainty in AEP depth estimates
 
 emp_cv <- se_rvs / rvs
@@ -573,14 +725,14 @@ ylim <- c(0, .35)
 
 # Prepare data for ggplot
 data_uncertainty <- data.frame(
-    shapes_5 = as.vector(restrict(shapes[,,5])),
-    emp_cv_10000 = as.vector(restrict(emp_cv[,,2,5])),
-    emp_cv_100000 = as.vector(restrict(emp_cv[,,3,5])),
-    emp_cv_million = as.vector(restrict(emp_cv[,,4,5]))
+    shapes_6 = as.vector(restrict(shapes[,,6])),
+    emp_cv_10000 = as.vector(restrict(emp_cv[,,2,6])),
+    emp_cv_100000 = as.vector(restrict(emp_cv[,,3,6])),
+    emp_cv_million = as.vector(restrict(emp_cv[,,4,6]))
 )
 
 # Create individual plots for each AEP depth uncertainty
-plot_10000 <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_10000)) +
+plot_10000 <- ggplot(data_uncertainty, aes(x = shapes_6, y = emp_cv_10000)) +
     geom_point(size = 0.5) +
     xlab("") +
     ylab("AEP depth relative uncertainty") +
@@ -589,7 +741,7 @@ plot_10000 <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_10000)) +
     ggtitle("(a) 1-in-10000 year") +
     theme_minimal()
 
-plot_100000 <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_100000)) +
+plot_100000 <- ggplot(data_uncertainty, aes(x = shapes_6, y = emp_cv_100000)) +
     geom_point(size = 0.5) +
     xlab("shape parameter estimate") +
     ylab("") +
@@ -598,7 +750,7 @@ plot_100000 <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_100000)) +
     ggtitle("(b) 1-in-100000 year") +
     theme_minimal()
 
-plot_million <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_million)) +
+plot_million <- ggplot(data_uncertainty, aes(x = shapes_6, y = emp_cv_million)) +
     geom_point(size = 0.5) +
     xlab("") +
     ylab("") +
@@ -616,17 +768,13 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-uncertainty.pdf")), plot 
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-uncertainty.png")), plot = full_plot, 
     height = 1200, width = 2400, units = "px")
 
-## Temperature results
+## Temperature
 
 var <- "temp"
 
-
-units <- "degrees C"
-varLabel <- "temperature"
+units <- "deg. C"
 
 load(paste0(var, "_fits.Rda"))
-
-load('era5.Rda')
 
 era5_max <- apply(temp_era5, c(1,2), max)
 
@@ -673,18 +821,38 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-compare-era5.pdf")),
 ggsave(filename = file.path(plot_dir, paste0(var, "-compare-era5.png")), 
     plot = full_plot, height = 1200, width = 3000, units = "px")
 
+# Check only 2001-2022 (revision)
+
+nT <- dim(temp_era5)[3]
+
+era5_max <- apply(temp_era5[,,(nT-ndays+1):nT], c(1,2), max)
+data_22 <- data.frame(era5_max = as.vector(restrict(era5_max)), max22 = as.vector(restrict(max22)))
+
+plot_22 <- ggplot(data_22, aes(x = era5_max, y = max22)) +
+    geom_point(size = 0.65) +
+    geom_abline(slope = 1, intercept = 0, col = "red") +
+    xlab("") + 
+    ylab(paste0("max (", units, ") in 22 emulator years")) +
+    xlab("max (", units, ") in ERA5, 2001-2022") + 
+    xlim(lim) + ylim(lim) +
+    theme_minimal()
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-compare-era5-2001-2022.pdf")),
+       plot = plot_22, height = 4, width = 4)
+
+
 # Create maps of extremes climatology.
 
 # Prepare data for ggplot
 data_combined <- data.frame(
     lon = rep(lon, length(lat)) - 360,
     lat = rep(lat, each = length(lon)),
-    rvs_1000 = as.vector(restrict(rvs[,,1,5])),
-    rvs_1000_se = as.vector(restrict(se_rvs[,,1,5])),
-    rvs_100000 = as.vector(restrict(rvs[,,3,5])),
-    rvs_100000_se = as.vector(restrict(se_rvs[,,3,5])),
-    shapes = as.vector(restrict(shapes[,,5])),
-    shapes_se = as.vector(restrict(se_shapes[,,5]))
+    rvs_1000 = as.vector(restrict(rvs[,,1,6])),
+    rvs_1000_se = as.vector(restrict(se_rvs[,,1,6])),
+    rvs_100000 = as.vector(restrict(rvs[,,3,6])),
+    rvs_100000_se = as.vector(restrict(se_rvs[,,3,6])),
+    shapes = as.vector(restrict(shapes[,,6])),
+    shapes_se = as.vector(restrict(se_shapes[,,6]))
 )
 
 data_combined <- data_combined |> filter(lon > -130 & lon < -65 & lat > 25 & lat < 50)
@@ -694,7 +862,7 @@ plot_rvs_1000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = rvs_1000)) +
     scale_fill_viridis_c(na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(a) 1-in-1000 year AEP depth estimate", fill = "") +
+    labs(title = "(a) 1-in-1000 year AEP temp. estimate", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -711,7 +879,7 @@ plot_rvs_100000 <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = rvs_100000)) +
     scale_fill_viridis_c(na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(b) 1-in-100000 year AEP depth estimate", fill = "") +
+    labs(title = "(b) 1-in-100000 year AEP temp. estimate", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -745,7 +913,7 @@ plot_rvs_1000_se <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = rvs_1000_se)) +
     scale_fill_viridis_c(na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(d) 1-in-1000 year AEP depth uncertainty", fill = "") +
+    labs(title = "(d) 1-in-1000 year AEP temp. uncertainty", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -762,7 +930,7 @@ plot_rvs_100000_se <- ggplot(data_combined, aes(x = lon, y = lat)) +
     geom_tile(aes(fill = rvs_100000_se)) +
     scale_fill_viridis_c(na.value = "white") +
     borders("state", colour = "grey", size = 0.25) +
-    labs(title = "(e) 1-in-100000 year AEP depth uncertainty", fill = "") +
+    labs(title = "(e) 1-in-100000 year AEP temp. uncertainty", fill = "") +
     theme_minimal() +
     theme(
         axis.title = element_blank(),
@@ -804,9 +972,6 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-climatology.png")),
 
 ## Comparison with empirical quantiles
 
-load('temp_fits_fixed.Rda')
-rvs_gev <- rvs_gev_fix
-
 ylim <- c(25,50)
 
 
@@ -814,11 +979,11 @@ ylim <- c(25,50)
 data_combined <- data.frame(
     emp_quants_1 = as.vector(restrict(emp_quants[,,1])),
     emp_quants_2 = as.vector(restrict(emp_quants[,,2])),
-    rvs_gev_1 = as.vector(restrict(rvs_gev[,,1])),
-    rvs_gev_2 = as.vector(restrict(rvs_gev[,,2]))
+    rvs_gev_1 = as.vector(restrict(rvs_gev[,,1,1])),
+    rvs_gev_2 = as.vector(restrict(rvs_gev[,,2,1]))
 )
 
-for(i in c(1,3,5,7)) {
+for(i in c(1,2,4,6,8)) {
     data_combined[[paste0("rvs_pot_1_", i)]] <- as.vector(restrict(rvs[,,1,i]))
     data_combined[[paste0("rvs_pot_2_", i)]] <- as.vector(restrict(rvs[,,2,i]))
 }
@@ -830,11 +995,11 @@ plot_gev_1 <- ggplot(data_combined, aes(x = emp_quants_1, y = rvs_gev_1)) +
     ylim(ylim) +
     theme_minimal()
 
-plot_pot_1 <- lapply(c(1,3,5,7), function(i) {
+plot_pot_1 <- lapply(c(2,4,6,8), function(i) {
     ggplot(data_combined, aes(x = emp_quants_1, y = .data[[paste0("rvs_pot_1_", i)]]))+
         geom_point(size = 0.65) +
         geom_abline(slope = 1, intercept = 0, col = 'red') +
-        labs(x = ifelse(i==3, "empirical quantile-based AEP depth estimates", ""),
+        labs(x = ifelse(i==3, "empirical quantile-based AEP temperature estimates", ""),
             y = paste0("POT, ", n_labs[i])) +
         ylim(ylim) +
         theme_minimal()
@@ -848,18 +1013,18 @@ plot_gev_2 <- ggplot(data_combined, aes(x = emp_quants_2, y = rvs_gev_2)) +
     ylim(ylim) +
     theme_minimal()
 
-plot_pot_2 <- lapply(c(1,3,5,7), function(i) {
+plot_pot_2 <- lapply(c(2,4,6,8), function(i) {
     ggplot(data_combined, aes(x = emp_quants_2, y = .data[[paste0("rvs_pot_2_", i)]]))+
         geom_point(size = 0.65) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
-        labs(x = ifelse(i==3, "empirical quantile-based AEP depth estimates", ""),
+        labs(x = ifelse(i==3, "empirical quantile-based AEP temperature estimates", ""),
             y = paste0("POT, ", n_labs[i])) +
         ylim(ylim) +
         theme_minimal()
 })
 
-row1_title <- textGrob("1-in-1000 year AEP depth estimates (cm)", gp = gpar(fontsize = 14, fontface = "bold"))
-row2_title <- textGrob("1-in-10000 year AEP depth estimates (cm)", gp = gpar(fontsize = 14, fontface = "bold"))
+row1_title <- textGrob("1-in-1000 year AEP temperature estimates (deg. C)", gp = gpar(fontsize = 14, fontface = "bold"))
+row2_title <- textGrob("1-in-10000 year AEP temperature estimates (deg. C)", gp = gpar(fontsize = 14, fontface = "bold"))
 
 # Arrange all plots with titles above each row.
 full_plot <- grid.arrange(
@@ -880,11 +1045,92 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias.pdf")), plot = full_
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias.png")), plot = full_plot, 
     height = 1600, width = 2400, units = "px")
 
+
+# Do analysis with POT analogous to annual max (revision)
+
+i <- 1  # POT analogous to annual max.
+
+plot_pot0_1 <- ggplot(data_combined, aes(x = emp_quants_1, y = .data[[paste0("rvs_pot_1_", i)]]))+
+        geom_point(size = 0.65) +
+        geom_abline(slope = 1, intercept = 0, col = 'red') +
+        labs(x = ifelse(i==3, "empirical quantile-based AEP temperature estimates", ""),
+            y = paste0("POT, n = 10560")) + 
+        ylim(ylim) +
+    theme_minimal()
+
+plot_pot0_2 <- ggplot(data_combined, aes(x = emp_quants_2, y = .data[[paste0("rvs_pot_2_", i)]]))+
+        geom_point(size = 0.65) +
+        geom_abline(slope = 1, intercept = 0, col = 'red') +
+        labs(x = ifelse(i==3, "empirical quantile-based AEP temperature estimates", ""),
+            y = paste0("POT, n = 10560")) + 
+        ylim(ylim) +
+    theme_minimal()
+
+full_plot <- grid.arrange(
+    row1_title, plot_pot0_1, plot_pot_1[[1]], plot_pot_1[[2]], plot_pot_1[[3]], plot_pot_1[[4]],
+    row2_title, plot_pot0_2, plot_pot_2[[1]], plot_pot_2[[2]], plot_pot_2[[3]], plot_pot_2[[4]],
+    ncol = 5,
+    layout_matrix = rbind(
+        c(1, 1, 1, 1, 1),
+        c(2, 3, 4, 5, 6),
+        c(7, 7, 7, 7, 7),
+        c(8, 9, 10, 11, 12)
+    ),
+    heights = c(0.5, 4, 0.5, 4) # Adjust the relative heights of rows
+)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias-pot-only.pdf")), plot = full_plot, height = 8, width = 12)
+
+# Do analysis with GEV with varying block lengths (revision)
+
+n_labs_gev <- paste0(blockLens, "-year maxima")
+
+for(i in c(1,2,4,6,7)) {
+    data_combined[[paste0("rvs_gev_1_", i)]] <- as.vector(restrict(rvs_gev[,,1,i]))
+    data_combined[[paste0("rvs_gev_2_", i)]] <- as.vector(restrict(rvs_gev[,,2,i]))
+}
+
+plot_gev_1 <- lapply(c(1,2,4,6,7), function(i) {
+    ggplot(data_combined, aes(x = emp_quants_1, y = .data[[paste0("rvs_gev_1_", i)]]))+
+        geom_point(size = 0.65) +
+        geom_abline(slope = 1, intercept = 0, col = 'red') +
+        labs(x = ifelse(i==3, "empirical quantile-based AEP temperature estimates", ""),
+            y = paste0("GEV, ", n_labs_gev[i])) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+plot_gev_2 <- lapply(c(1,2,4,6,7), function(i) {
+    ggplot(data_combined, aes(x = emp_quants_2, y = .data[[paste0("rvs_gev_2_", i)]]))+
+        geom_point(size = 0.65) +
+        geom_abline(slope = 1, intercept = 0, col = 'red') +
+        labs(x = ifelse(i==3, "empirical quantile-based AEP temperature estimates", ""),
+            y = paste0("GEV, ", n_labs_gev[i])) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+full_plot <- grid.arrange(
+    row1_title, plot_gev_1[[1]], plot_gev_1[[2]], plot_gev_1[[3]], plot_gev_1[[4]], plot_gev_1[[5]],
+    row2_title, plot_gev_2[[1]], plot_gev_2[[2]], plot_gev_2[[3]], plot_gev_2[[4]], plot_gev_2[[5]],
+    ncol = 5,
+    layout_matrix = rbind(
+        c(1, 1, 1, 1, 1),
+        c(2, 3, 4, 5, 6),
+        c(7, 7, 7, 7, 7),
+        c(8, 9, 10, 11, 12)
+    ),
+    heights = c(0.5, 4, 0.5, 4) # Adjust the relative heights of rows
+)
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-bias-gev-only.pdf")), plot = full_plot, height = 8, width = 12)
+
+
 ## Shape parameter and AEP depth stability
 
 # Prepare data for ggplot
 data_histograms <- data.frame()
-for(i in c(1,3,5,7,9)) {
+for(i in c(2,4,6,8,10)) {
     values <- as.vector(restrict(shapes[,,i]))
     values <- values[!is.na(values)]
     pct_negative <- 100 * round(mean(values < 0, na.rm = TRUE), 2)
@@ -933,30 +1179,30 @@ ylim <- c(-.5, .5)
 
 # Prepare data for ggplot
 data_stability_shapes <- data.frame(
-    shapes_5 = as.vector(restrict(shapes[,,5])),
-    shapes_1 = as.vector(restrict(shapes[,,1])),
-    shapes_3 = as.vector(restrict(shapes[,,3])),
     shapes_6 = as.vector(restrict(shapes[,,6])),
-    shapes_8 = as.vector(restrict(shapes[,,8])),
-    shapes_9 = as.vector(restrict(shapes[,,9]))
+    shapes_2 = as.vector(restrict(shapes[,,2])),
+    shapes_4 = as.vector(restrict(shapes[,,4])),
+    shapes_7 = as.vector(restrict(shapes[,,7])),
+    shapes_9 = as.vector(restrict(shapes[,,9])),
+    shapes_10 = as.vector(restrict(shapes[,,10]))
 )
 
 data_stability_rvs <- data.frame(
-    rvs_5 = as.vector(restrict(rvs[,,3,5])),
-    rvs_1 = as.vector(restrict(rvs[,,3,1])),
-    rvs_3 = as.vector(restrict(rvs[,,3,3])),
     rvs_6 = as.vector(restrict(rvs[,,3,6])),
-    rvs_8 = as.vector(restrict(rvs[,,3,8])),
-    rvs_9 = as.vector(restrict(rvs[,,3,9]))
+    rvs_2 = as.vector(restrict(rvs[,,3,2])),
+    rvs_4 = as.vector(restrict(rvs[,,3,4])),
+    rvs_7 = as.vector(restrict(rvs[,,3,7])),
+    rvs_9 = as.vector(restrict(rvs[,,3,9])),
+    rvs_10 = as.vector(restrict(rvs[,,3,10]))
 )
 
 # Create individual plots for shape parameter stability
-plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
+plot_shapes <- lapply(c(2,4,7,9,10), function(i) {
     ggplot(data_stability_shapes, aes(x = shapes_5, y = .data[[paste0("shapes_", i)]])) +
         geom_point(size = 0.5) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
-            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[5]), ""),
+            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[6]), ""),
             y = n_labs[i]
         ) +
         ylim(ylim) +
@@ -964,19 +1210,19 @@ plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
 })
 
 # Create individual plots for AEP depth stability
-plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
+plot_rvs <- lapply(c(2,4,7,9,10), function(i) {
     ggplot(data_stability_rvs, aes(x = rvs_5, y = .data[[paste0("rvs_", i)]])) +
         geom_point(size = 0.5) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
-             x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[5]), ""),
+             x = ifelse(i==6, paste0("AEP temperature estimate for ", n_labs[6]), ""),
             y = n_labs[i]
         ) +
         theme_minimal()
 })
 
 row1_title <- textGrob("Shape parameter estimates", gp = gpar(fontsize = 14, fontface = "bold"))
-row2_title <- textGrob("1-in-100000 year AEP depth estimates (cm)", gp = gpar(fontsize = 14, fontface = "bold"))
+row2_title <- textGrob("1-in-100000 year AEP temperature estimates (deg. C)", gp = gpar(fontsize = 14, fontface = "bold"))
 
 # Arrange all plots with titles above each row.
 full_plot <- grid.arrange(
@@ -1002,21 +1248,21 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-stability.png")), plot = ful
 
 # Prepare data for ggplot
 data_stability_shapes_alt <- data.frame(
-    shapes_5 = as.vector(restrict(shapes[,,5])),
-    shapes_1_diff = as.vector(restrict(shapes[,,1]) - restrict(shapes[,,5])),
-    shapes_3_diff = as.vector(restrict(shapes[,,3]) - restrict(shapes[,,5])),
-    shapes_6_diff = as.vector(restrict(shapes[,,6]) - restrict(shapes[,,5])),
-    shapes_8_diff = as.vector(restrict(shapes[,,8]) - restrict(shapes[,,5])),
-    shapes_9_diff = as.vector(restrict(shapes[,,9]) - restrict(shapes[,,5]))
+    shapes_6 = as.vector(restrict(shapes[,,6])),
+    shapes_2_diff = as.vector(restrict(shapes[,,2]) - restrict(shapes[,,6])),
+    shapes_4_diff = as.vector(restrict(shapes[,,4]) - restrict(shapes[,,6])),
+    shapes_7_diff = as.vector(restrict(shapes[,,7]) - restrict(shapes[,,6])),
+    shapes_9_diff = as.vector(restrict(shapes[,,9]) - restrict(shapes[,,6])),
+    shapes_10_diff = as.vector(restrict(shapes[,,10]) - restrict(shapes[,,6]))
 )
 
 data_stability_rvs_alt <- data.frame(
-    rvs_5 = as.vector(restrict(rvs[,,3,5])),
-    rvs_1_diff = as.vector(restrict(rvs[,,3,1]) - restrict(rvs[,,3,5])),
-    rvs_3_diff = as.vector(restrict(rvs[,,3,3]) - restrict(rvs[,,3,5])),
-    rvs_6_diff = as.vector(restrict(rvs[,,3,6]) - restrict(rvs[,,3,5])),
-    rvs_8_diff = as.vector(restrict(rvs[,,3,8]) - restrict(rvs[,,3,5])),
-    rvs_9_diff = as.vector(restrict(rvs[,,3,9]) - restrict(rvs[,,3,5]))
+    rvs_6 = as.vector(restrict(rvs[,,3,6])),
+    rvs_2_diff = as.vector(restrict(rvs[,,3,2]) - restrict(rvs[,,3,6])),
+    rvs_4_diff = as.vector(restrict(rvs[,,3,4]) - restrict(rvs[,,3,6])),
+    rvs_7_diff = as.vector(restrict(rvs[,,3,7]) - restrict(rvs[,,3,6])),
+    rvs_9_diff = as.vector(restrict(rvs[,,3,9]) - restrict(rvs[,,3,6])),
+    rvs_10_diff = as.vector(restrict(rvs[,,3,10]) - restrict(rvs[,,3,6]))
 )
 
 # Create individual plots for shape parameter stability
@@ -1024,11 +1270,11 @@ data_stability_rvs_alt <- data.frame(
 ylim <- c(-.5, .5)  # Modify for temperature.
 
 
-plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
+plot_shapes <- lapply(c(2,4,7,9,10), function(i) {
     ggplot(data_stability_shapes_alt, aes(x = shapes_5, y = .data[[paste0("shapes_", i, "_diff")]])) +
         geom_point(size = 0.5) +
         labs(
-            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[5]), ""),
+            x = ifelse(i==6, paste0("shape parameter estimate for ", n_labs[6]), ""),
             y = paste0("difference for ", n_labs[i])
         ) +
         ylim(ylim) +
@@ -1039,11 +1285,11 @@ plot_shapes <- lapply(c(1, 3, 6, 8, 9), function(i) {
 ylim <- c(-.5, .5)  # Modify for temperature.
 
 
-plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
+plot_rvs <- lapply(c(2,4,7,9,10), function(i) {
     ggplot(data_stability_rvs_alt, aes(x = rvs_5, y = .data[[paste0("rvs_", i, "_diff")]])) +
         geom_point(size = 0.5) +
         labs(
-             x = ifelse(i==6, paste0("AEP depth estimate for ", n_labs[5]), ""),
+             x = ifelse(i==6, paste0("AEP temperature estimate for ", n_labs[6]), ""),
             y = paste0("difference for ", n_labs[i])
         ) +
         ylim(ylim) +
@@ -1051,7 +1297,7 @@ plot_rvs <- lapply(c(1, 3, 6, 8, 9), function(i) {
 })
 
 row1_title <- textGrob("Shape parameter estimates", gp = gpar(fontsize = 14, fontface = "bold"))
-row2_title <- textGrob("1-in-100000 year AEP depth estimates (cm)", gp = gpar(fontsize = 14, fontface = "bold"))
+row2_title <- textGrob("1-in-100000 year AEP temperature estimates (deg. C)", gp = gpar(fontsize = 14, fontface = "bold"))
 
 # Arrange all plots with titles above each row.
 full_plot <- grid.arrange(
@@ -1074,12 +1320,14 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-stability-alt.png")), plot =
 
 
 ## Seasonality
+
 xlim <- c(25,50)
 ylim <- c(25,50)
 
+# Original version of seasonal analysis using maximum return value over the four seasons.
 
 # Prepare data for ggplot
-data_seasonal <- lapply(c(1, 3, 5, 7), function(i) {
+data_seasonal <- lapply(c(2,4,6,8), function(i) {
     data.frame(
         full_year_rv = as.vector(restrict(rvs[,,3,i])),
         max_seasonal_rv1 = as.vector(restrict(rvs_max_seas1[,,3,i])),
@@ -1088,14 +1336,16 @@ data_seasonal <- lapply(c(1, 3, 5, 7), function(i) {
     )
 })
 
+# Version 1 of seasonal analysis - use same thresholds as full year analysis
+
 # Create individual plots for each label
 plot_seasonal <- lapply(seq_along(data_seasonal), function(i) {
     ggplot(data_seasonal[[i]], aes(x = full_year_rv, y = max_seasonal_rv1)) +
         geom_point(size = 0.75) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
-            x = paste0("full-year AEP depth (", units, ")"),
-            y = ifelse(i==1, paste0("max seasonal AEP depth (", units, ")"), ""),
+            x = paste0("full-year AEP temp. (", units, ")"),
+            y = ifelse(i==1, paste0("max seasonal AEP temperature (", units, ")"), ""),
             title = unique(data_seasonal[[i]]$label)
         ) +
         xlim(xlim) +
@@ -1115,14 +1365,16 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1.pdf")), plot = 
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1.png")), plot = full_plot, 
         height = 1200, width = 2700, units = "px")
 
+# Version 2 of seasonal analysis - use same number of exceedances in each season as in full year
+
 # Create individual plots for each label
 plot_seasonal <- lapply(seq_along(data_seasonal), function(i) {
     ggplot(data_seasonal[[i]], aes(x = full_year_rv, y = max_seasonal_rv2)) +
         geom_point(size = 0.75) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
-            x = paste0("full-year AEP depth (", units, ")"),
-            y = ifelse(i==1, paste0("max seasonal AEP depth (", units, ")"), ""),
+            x = paste0("full-year AEP temp. (", units, ")"),
+            y = ifelse(i==1, paste0("max seasonal AEP temp. (", units, ")"), ""),
             title = unique(data_seasonal[[i]]$label)
         ) +
         xlim(xlim) +
@@ -1142,6 +1394,67 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2.pdf")), plot = 
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2.png")), plot = full_plot, 
         height = 1200, width = 2700, units = "px")
 
+# Fixed version of seasonal analysis with sum of seasonal probs equal to desired probability.
+
+data_seasonal <- lapply(c(2,4,6,8), function(i) {
+    data.frame(
+        full_year_rv = as.vector(restrict(rvs[,,3,i])),
+        full_seasonal_rv1 = as.vector(restrict(rvs_full_seas1[,,3,i])),
+        full_seasonal_rv2 = as.vector(restrict(rvs_full_seas2[,,3,i])),
+        label = n_labs[i]
+    )
+})
+
+# Version 1 of seasonal analysis - use same thresholds as full year analysis
+
+plot_seasonal <- lapply(seq_along(data_seasonal), function(i) {
+    ggplot(data_seasonal[[i]], aes(x = full_year_rv, y = full_seasonal_rv1)) +
+        geom_point(size = 0.75) +
+        geom_abline(slope = 1, intercept = 0, col = "red") +
+        labs(
+            x = paste0("full-year AEP temp. (", units, ")"),
+            y = ifelse(i==1, paste0("aggregated seasonal AEP temperature (", units, ")"), ""),
+            title = unique(data_seasonal[[i]]$label)
+        ) +
+        xlim(xlim) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+# Arrange all plots in a single row
+full_plot <- grid.arrange(
+    grobs = plot_seasonal,
+    ncol = 4
+)
+
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1-revised.pdf")), plot = full_plot, height = 4, width = 9)
+
+# Version 2 of seasonal analysis - use same number of exceedances in each season as in full year
+
+plot_seasonal <- lapply(seq_along(data_seasonal), function(i) {
+    ggplot(data_seasonal[[i]], aes(x = full_year_rv, y = full_seasonal_rv2)) +
+        geom_point(size = 0.75) +
+        geom_abline(slope = 1, intercept = 0, col = "red") +
+        labs(
+            x = paste0("full-year AEP temp. (", units, ")"),
+            y = ifelse(i==1, paste0("aggregated seasonal AEP temperature (", units, ")"), ""),
+            title = unique(data_seasonal[[i]]$label)
+        ) +
+        xlim(xlim) +
+        ylim(ylim) +
+        theme_minimal()
+})
+
+# Arrange all plots in a single row
+full_plot <- grid.arrange(
+    grobs = plot_seasonal,
+    ncol = 4
+)
+
+
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2-revised.pdf")), plot = full_plot, height = 4, width = 9)
+
 ## Uncertainty in AEP depth estimates
 
 emp_cv <- se_rvs / rvs
@@ -1151,17 +1464,17 @@ ylim <- c(0,.15)
 
 # Prepare data for ggplot
 data_uncertainty <- data.frame(
-    shapes_5 = as.vector(restrict(shapes[,,5])),
-    emp_cv_10000 = as.vector(restrict(emp_cv[,,2,5])),
-    emp_cv_100000 = as.vector(restrict(emp_cv[,,3,5])),
-    emp_cv_million = as.vector(restrict(emp_cv[,,4,5]))
+    shapes_5 = as.vector(restrict(shapes[,,6])),
+    emp_cv_10000 = as.vector(restrict(emp_cv[,,2,6])),
+    emp_cv_100000 = as.vector(restrict(emp_cv[,,3,6])),
+    emp_cv_million = as.vector(restrict(emp_cv[,,4,6]))
 )
 
 # Create individual plots for each AEP depth uncertainty
 plot_10000 <- ggplot(data_uncertainty, aes(x = shapes_5, y = emp_cv_10000)) +
     geom_point(size = 0.5) +
     xlab("") +
-    ylab("AEP depth relative uncertainty") +
+    ylab("AEP temperature relative uncertainty") +
     xlim(xlim) +
     ylim(ylim) +
     ggtitle("(a) 1-in-10000 year") +

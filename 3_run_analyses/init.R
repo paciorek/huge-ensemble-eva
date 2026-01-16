@@ -11,6 +11,12 @@ ndays <- 365*17+366*5  # leap years in 2004,2008,2012,2016,2020
 ## Sequence of (daily) quantiles on log scale.
 nthr <- 10
 qs <- 1-exp(seq(log(.001), log(.00001), length = nthr))
+qs <- c(.997262, qs)  # Include quantile giving sample size equal to annual maxima.
+nthr <- nthr + 1
+
+## Sequence of block lengths for GEV
+blockLens <- c(1, 5, 10, 20, 40, 80, 160)
+nlens <- length(blockLens)
 
 returnPeriods <- c(1000,10000,100000,1000000)
 nrp <- length(returnPeriods)
