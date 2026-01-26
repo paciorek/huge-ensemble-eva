@@ -10,11 +10,6 @@ source("restrict_contig_US.R")
 source("init.R")
 
 
-
-qs_round <- round(qs, 5)
-labs <-  paste0("thresh = ", qs_round, "%")
-n_labs <- paste0("n = ", ns[1,1,])
-
 omi <- c(0,0,.3,0)
 par(omi = omi)
 
@@ -27,6 +22,10 @@ var <- "prec"
 units <- "cm"
 
 load(paste0(var, "_fits.Rda"))
+
+qs_round <- round(qs, 5)
+labs <-  paste0("thresh = ", qs_round, "%")
+n_labs <- paste0("n = ", ns[1,1,])
 
 # Compare emulator maxes with ERA5 maxes.
 
@@ -87,17 +86,17 @@ nT <- dim(prec_era5)[3]
 era5_max <- apply(prec_era5[,,(nT-ndays+1):nT], c(1,2), max)
 data_22 <- data.frame(era5_max = as.vector(restrict(era5_max)), max22 = as.vector(restrict(max22)))
 
-plot_22 <- ggplot(data_22, aes(x = era5_max, y = max22)) +
+plot_22_prec <- ggplot(data_22, aes(x = era5_max, y = max22)) +
     geom_point(size = 0.65) +
     geom_abline(slope = 1, intercept = 0, col = "red") +
     xlab("") + 
     ylab(paste0("max (", units, ") in 22 emulator years")) +
-    xlab("max (", units, ") in ERA5, 2001-2022") + 
+    xlab(paste0("max (", units, ") in ERA5, 2001-2022")) +
     xlim(lim) + ylim(lim) +
     theme_minimal()
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-compare-era5-2001-2022.pdf")),
-       plot = plot_22, height = 4, width = 4)
+       plot = plot_22_prec, height = 4, width = 4)
 
 
 # Create maps of extremes climatology.
@@ -828,17 +827,17 @@ nT <- dim(temp_era5)[3]
 era5_max <- apply(temp_era5[,,(nT-ndays+1):nT], c(1,2), max)
 data_22 <- data.frame(era5_max = as.vector(restrict(era5_max)), max22 = as.vector(restrict(max22)))
 
-plot_22 <- ggplot(data_22, aes(x = era5_max, y = max22)) +
+plot_22_temp <- ggplot(data_22, aes(x = era5_max, y = max22)) +
     geom_point(size = 0.65) +
     geom_abline(slope = 1, intercept = 0, col = "red") +
     xlab("") + 
     ylab(paste0("max (", units, ") in 22 emulator years")) +
-    xlab("max (", units, ") in ERA5, 2001-2022") + 
+    xlab(paste0("max (", units, ") in ERA5, 2001-2022")) + 
     xlim(lim) + ylim(lim) +
     theme_minimal()
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-compare-era5-2001-2022.pdf")),
-       plot = plot_22, height = 4, width = 4)
+       plot = plot_22_temp, height = 4, width = 4)
 
 
 # Create maps of extremes climatology.
@@ -1506,3 +1505,10 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-rv-uncertainty.pdf")), plot 
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-uncertainty.png")), plot = full_plot, 
     height = 1200, width = 2400, units = "px")
+
+# Combine 22-year analog of Fig 1a and Fig 7a:
+
+full_plot <- grid.arrange(plot_22_prec, plot_22_temp, ncol = 2)
+
+ggsave(filename = file.path(plot_dir, paste0("prec-temp-compare-era5-2001-2022.pdf")),
+       plot = full_plot, height = 4, width = 6)
