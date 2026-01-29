@@ -434,21 +434,21 @@ ggsave(filename = file.path(plot_dir, paste0(var, "-shape-hists.png")),
 
 # Prepare data for ggplot
 data_stability_shapes <- data.frame(
-    shapes_5 = as.vector(restrict(shapes[,,6])),
-    shapes_1 = as.vector(restrict(shapes[,,2])),
-    shapes_3 = as.vector(restrict(shapes[,,4])),
-    shapes_6 = as.vector(restrict(shapes[,,7])),
-    shapes_8 = as.vector(restrict(shapes[,,9])),
-    shapes_9 = as.vector(restrict(shapes[,,10]))
+    shapes_6 = as.vector(restrict(shapes[,,6])),
+    shapes_3 = as.vector(restrict(shapes[,,2])),
+    shapes_4 = as.vector(restrict(shapes[,,4])),
+    shapes_7 = as.vector(restrict(shapes[,,7])),
+    shapes_9 = as.vector(restrict(shapes[,,9])),
+    shapes_10 = as.vector(restrict(shapes[,,10]))
 )
 
 data_stability_rvs <- data.frame(
-    rvs_5 = as.vector(restrict(rvs[,,3,6])),
-    rvs_1 = as.vector(restrict(rvs[,,3,2])),
-    rvs_3 = as.vector(restrict(rvs[,,3,4])),
-    rvs_6 = as.vector(restrict(rvs[,,3,7])),
-    rvs_8 = as.vector(restrict(rvs[,,3,9])),
-    rvs_9 = as.vector(restrict(rvs[,,3,10]))
+    rvs_6 = as.vector(restrict(rvs[,,3,6])),
+    rvs_2 = as.vector(restrict(rvs[,,3,2])),
+    rvs_4 = as.vector(restrict(rvs[,,3,4])),
+    rvs_7 = as.vector(restrict(rvs[,,3,7])),
+    rvs_9 = as.vector(restrict(rvs[,,3,9])),
+    rvs_10 = as.vector(restrict(rvs[,,3,10]))
 )
 
 n_labs_augment <- n_labs
@@ -456,7 +456,7 @@ n_labs_augment[1] <- paste0("shape parameter estimate for\n", n_labs[1])
 
 # Create individual plots for shape parameter stability
 plot_shapes <- lapply(c(2,4,7,9,10), function(i) {
-    ggplot(data_stability_shapes, aes(x = shapes_5, y = .data[[paste0("shapes_", i)]])) +
+    ggplot(data_stability_shapes, aes(x = shapes_6, y = .data[[paste0("shapes_", i)]])) +
         geom_point(size = 0.5) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
@@ -473,7 +473,7 @@ n_labs_augment[1] <- paste0("AEP depth estimate for\n", n_labs[1])
 
 # Create individual plots for AEP depth stability
 plot_rvs <- lapply(c(2,4,7,9,10), function(i) {
-    ggplot(data_stability_rvs, aes(x = rvs_5, y = .data[[paste0("rvs_", i)]])) +
+    ggplot(data_stability_rvs, aes(x = rvs_6, y = .data[[paste0("rvs_", i)]])) +
         geom_point(size = 0.5) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
@@ -774,6 +774,11 @@ var <- "temp"
 units <- "deg. C"
 
 load(paste0(var, "_fits.Rda"))
+
+qs_round <- round(qs, 5)
+labs <-  paste0("thresh = ", qs_round, "%")
+n_labs <- paste0("n = ", ns[1,1,])
+
 
 era5_max <- apply(temp_era5, c(1,2), max)
 
@@ -1197,7 +1202,7 @@ data_stability_rvs <- data.frame(
 
 # Create individual plots for shape parameter stability
 plot_shapes <- lapply(c(2,4,7,9,10), function(i) {
-    ggplot(data_stability_shapes, aes(x = shapes_5, y = .data[[paste0("shapes_", i)]])) +
+    ggplot(data_stability_shapes, aes(x = shapes_6, y = .data[[paste0("shapes_", i)]])) +
         geom_point(size = 0.5) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
@@ -1210,7 +1215,7 @@ plot_shapes <- lapply(c(2,4,7,9,10), function(i) {
 
 # Create individual plots for AEP depth stability
 plot_rvs <- lapply(c(2,4,7,9,10), function(i) {
-    ggplot(data_stability_rvs, aes(x = rvs_5, y = .data[[paste0("rvs_", i)]])) +
+    ggplot(data_stability_rvs, aes(x = rvs_6, y = .data[[paste0("rvs_", i)]])) +
         geom_point(size = 0.5) +
         geom_abline(slope = 1, intercept = 0, col = "red") +
         labs(
@@ -1359,7 +1364,7 @@ full_plot <- grid.arrange(
 )
 
 
-ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1.pdf")), plot = full_plot, height = 4, width = 9)
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1.pdf")), plot = full_plot, height = 4, width = 9.5)
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1.png")), plot = full_plot, 
         height = 1200, width = 2700, units = "px")
@@ -1388,7 +1393,7 @@ full_plot <- grid.arrange(
 )
 
 
-ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2.pdf")), plot = full_plot, height = 4, width = 9)
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2.pdf")), plot = full_plot, height = 4, width = 9.5)
 
 ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2.png")), plot = full_plot, 
         height = 1200, width = 2700, units = "px")
@@ -1427,7 +1432,7 @@ full_plot <- grid.arrange(
 )
 
 
-ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1-revised.pdf")), plot = full_plot, height = 4, width = 9)
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal1-revised.pdf")), plot = full_plot, height = 4, width = 9.5)
 
 # Version 2 of seasonal analysis - use same number of exceedances in each season as in full year
 
@@ -1452,9 +1457,9 @@ full_plot <- grid.arrange(
 )
 
 
-ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2-revised.pdf")), plot = full_plot, height = 4, width = 9)
+ggsave(filename = file.path(plot_dir, paste0(var, "-rv-seasonal2-revised.pdf")), plot = full_plot, height = 4, width = 9.5)
 
-## Uncertainty in AEP depth estimates
+## Uncertainty in AEP temperature estimates
 
 emp_cv <- se_rvs / rvs
 
