@@ -41,4 +41,4 @@ This uses R package `climextRemes` v. 0.3.1.
 Rscript make_figures.R
 ```
 
-Figure files go to the `figures` directory.
+Figure files go to the `figures` directory. For use in submission, I then copied to Overleaf, with copies also in `4_bams/{original,revision,revision2}.

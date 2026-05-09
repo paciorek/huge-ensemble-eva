@@ -1,0 +1,1 @@
+For arXiv - downloaded zip bundle from Overleaf. Then modified ametsocV6.1.cls manually to avoid adding linenumbers. Uploaded that modified cls to arXiv to build w/o line numbers as they require.
